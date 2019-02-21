@@ -23,7 +23,7 @@ import subprocess
 import warnings
 import abc
 
-from mn_wifi.sumo.sumolib import sumulib  # noqa
+from mn_iot.sumo.sumolib import sumulib  # noqa
 
 from .domain import _defaultDomains
 from .connection import Connection, _embedded

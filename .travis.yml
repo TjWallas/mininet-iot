@@ -15,7 +15,7 @@ install:
 
 script:
 - sudo mn --wifi --test pingall
-- sudo python mn_wifi/test/runner.py -v -quick
+- sudo python mn_iot/test/runner.py -v -quick
 #- sudo python examples/test/runner.py -v -quick
 
 notifications:

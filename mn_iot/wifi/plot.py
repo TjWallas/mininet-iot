@@ -103,7 +103,7 @@ class plot3d (object):
     @classmethod
     def instantiateCircle(cls, node):
         "Instantiate Circle"
-        from mn_wifi.node import Station, Car
+        from mn_iot.wifi.node import Station, Car
 
         x, y, z = cls.getPos(node)
         color = 'b'
@@ -202,7 +202,7 @@ class plot2d (object):
     def instantiateGraph(cls, MIN_X, MIN_Y, MAX_X, MAX_Y):
         "instantiateGraph"
         plt.ion()
-        plt.title("Mininet-WiFi Graph")
+        plt.title("Mininet-IoT Graph")
         cls.ax = plt.subplot(111)
         cls.ax.set_xlabel('meters')
         cls.ax.set_ylabel('meters')
@@ -232,7 +232,7 @@ class plot2d (object):
 
     @classmethod
     def set_def_color(cls, node):
-        from mn_wifi.node import Station, Car
+        from mn_iot.wifi.node import Station, Car
         if 'color' in node.params:
             color = node.params['color']
         else:

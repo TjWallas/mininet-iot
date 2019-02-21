@@ -2156,7 +2156,7 @@ class MiniEdit( Frame ):
         c = self.canvas
 
         myFormats = [
-            ('Mininet/Mininet-WiFi Topology','*.mn'),
+            ('Mininet/Mininet-IoT Topology','*.mn'),
             ('All Files','*'),
         ]
         f = tkFileDialog.askopenfile(filetypes=myFormats, mode='rb')
@@ -2682,7 +2682,7 @@ class MiniEdit( Frame ):
             f.write("from mininet.log import setLogLevel, info\n")
 
             if isWiFi:
-                f.write("from mn_wifi.net import Mininet_wifi\n")
+                f.write("from mn_iot.wifi.net import Mininet_wifi\n")
                 args = ''
                 if hasStation:
                     args += ' Station'
@@ -2696,14 +2696,14 @@ class MiniEdit( Frame ):
                     else:
                         args += apType_
                 if args:
-                    f.write("from mn_wifi.node import"+args+"\n")
-                f.write("from mn_wifi.cli import CLI_wifi\n")
+                    f.write("from mn_iot.wifi.node import"+args+"\n")
+                f.write("from mn_iot.wifi.cli import CLI_wifi\n")
                 if not links_:
                     links_=''
-                f.write("from mn_wifi.link import wmediumd"+links_+"\n")
+                f.write("from mn_iot.wifi.link import wmediumd"+links_+"\n")
                 if sixLinks_:
-                    f.write("from mn_wifi.sixLoWPAN.link import" + sixLinks_ + "\n")
-                f.write("from mn_wifi.wmediumdConnector import interference\n")
+                    f.write("from mn_iot.mac802154.link import" + sixLinks_ + "\n")
+                f.write("from mn_iot.wifi.wmediumdConnector import interference\n")
             f.write("from subprocess import call\n")
 
             inBandCtrl = False
