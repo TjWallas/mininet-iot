@@ -93,7 +93,7 @@ from mininet.log import setLogLevel, debug, info, error
 from mininet.clean import addCleanupCallback
 
 from mn_iot.wifi.node import OVSAP
-from mn_iot.wifi.examples.clustercli import CLI
+from mn_iot.examples.clustercli import CLI
 
 
 def findUser():
