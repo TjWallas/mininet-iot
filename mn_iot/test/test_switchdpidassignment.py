@@ -10,9 +10,9 @@ from mininet.node import Controller, IVSSwitch
 from mininet.log import setLogLevel
 from mininet.util import quietRun
 from mininet.clean import cleanup
-from mn_wifi.node import Station, UserAP, OVSAP
-from mn_wifi.topo import Topo_WiFi
-from mn_wifi.net import Mininet_wifi
+from mn_iot.wifi.node import Station, UserAP, OVSAP
+from mn_iot.wifi.topo import Topo_WiFi
+from mn_iot.wifi.net import Mininet_wifi
 
 
 class TestSwitchDpidAssignmentOVS(unittest.TestCase):
