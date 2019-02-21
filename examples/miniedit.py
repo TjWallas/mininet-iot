@@ -60,9 +60,9 @@ from mininet.moduledeps import moduleDeps
 from mininet.topo import SingleSwitchTopo, LinearTopo, SingleSwitchReversedTopo
 from mininet.topolib import TreeTopo
 
-from mn_wifi.net import Mininet_wifi
-from mn_wifi.node import CPULimitedStation, Station
-from mn_wifi.node import OVSAP, UserAP
+from mn_iot.wifi.net import Mininet_wifi
+from mn_iot.wifi.node import CPULimitedStation, Station
+from mn_iot.wifi.node import OVSAP, UserAP
 
 
 info( 'MiniEdit running against Mininet '+VERSION, '\n' )

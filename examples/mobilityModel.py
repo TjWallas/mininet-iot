@@ -3,8 +3,8 @@
 'Setting the position of Nodes and providing mobility using mobility models'
 
 from mininet.log import setLogLevel, info
-from mn_wifi.cli import CLI_wifi
-from mn_wifi.net import Mininet_wifi
+from mn_iot.wifi.cli import CLI_wifi
+from mn_iot.wifi.net import Mininet_wifi
 
 
 def topology():

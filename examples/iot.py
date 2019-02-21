@@ -5,9 +5,9 @@
 
 from mininet.node import Controller
 from mininet.log import setLogLevel, info
-from mn_wifi.cli import CLI_wifi
-from mn_wifi.net import Mininet_wifi
-from mn_wifi.sixLoWPAN.link import sixLoWPANLink
+from mn_iot.wifi.cli import CLI_wifi
+from mn_iot.wifi.net import Mininet_wifi
+from mn_iot.wifi.sixLoWPAN.link import sixLoWPANLink
 
 
 def topology():

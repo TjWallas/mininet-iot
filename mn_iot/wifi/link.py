@@ -1,5 +1,6 @@
 """
-author: Ramon Fontes (ramonrf@dca.fee.unicamp.br)
+author:
+    Ramon Fontes (ramonrf@dca.fee.unicamp.br)
 """
 
 import os
@@ -22,7 +23,7 @@ class IntfWireless(object):
 
     def __init__(self, name, node=None, port=None, link=None,
                  mac=None, tc=False, **params):
-        """name: interface name (e.g. h1-eth0)
+        """name: interface name (e.g. sta1-wlan0)
            node: owning node (where this intf most likely lives)
            link: parent link if we're part of a link
            other arguments are passed to config()"""
@@ -31,6 +32,13 @@ class IntfWireless(object):
         self.link = link
         self.port = port
         self.mac = mac
+        self.freq = ''
+        self.mode = 'g'
+        self.channel = 1
+
+        if ('AP' in node.__class__.__name__):
+            self.ssid = ''
+
         self.ip, self.prefixLen = None, None
         # if interface is lo, we know the ip is 127.0.0.1.
         # This saves an ip link/addr command per node
@@ -479,7 +487,7 @@ class _4address(object):
             cl.params['wlan'].append(cl_intfName)
             sleep(1)
             cl.cmd('iw dev %s connect %s %s' % (cl.params['wlan'][1],
-                   ap.params['ssid'][apwlan], ap.params['mac'][apwlan]))
+                   ap.intfs[apwlan+1].ssid, ap.intfs[apwlan+1].mac))
 
             params1 = {}
             params2 = {}
@@ -539,7 +547,8 @@ class WirelessLinkAP(object):
     # pylint: disable=too-many-branches
     def __init__(self, node1, port1=None,
                  intfName1=None, addr1=None,
-                 intf=IntfWireless, cls1=None, params1=None):
+                 intf=IntfWireless, cls1=None,
+                 wintf=None, wlan=0, params1=None):
         """Create veth link to another node, making two new interfaces.
            node1: first node
            port1: node1 port number (optional)
@@ -556,6 +565,9 @@ class WirelessLinkAP(object):
 
         if port1 is not None:
             params1[ 'port' ] = port1
+
+        if wintf:
+            self.rename(node1, wintf, node1.params['wlan'][wlan])
 
         ifacename = 'wlan'
 
@@ -596,6 +608,12 @@ class WirelessLinkAP(object):
         "Ignore any arguments"
         pass
 
+    def rename(self, node, wintf, newname):
+        "Rename interface"
+        node.pexec('ip link set %s down' % wintf)
+        node.pexec('ip link set %s name %s' % (wintf, newname))
+        node.pexec('ip link set %s up' % newname)
+
     def wlanName(self, node, ifacename, n):
         "Construct a canonical interface name node-ethN for interface n."
         # Leave this as an instance method for now
@@ -628,7 +646,8 @@ class WirelessLinkStation(object):
     # pylint: disable=too-many-branches
     def __init__(self, node1, port1=None,
                  intfName1=None, addr1=None,
-                 intf=IntfWireless, cls1=None, params1=None):
+                 intf=IntfWireless, cls1=None,
+                 params1=None):
         """Create veth link to another node, making two new interfaces.
            node1: first node
            port1: node1 port number (optional)
@@ -706,9 +725,10 @@ class TCLinkWirelessStation(WirelessLinkStation):
 class TCLinkWirelessAP(WirelessLinkAP):
     "Link with symmetric TC interfaces configured via opts"
     def __init__(self, node1, port1=None, intfName1=None,
-                 addr1=None, **params):
+                 addr1=None, wintf=None, **params):
         WirelessLinkAP.__init__(self, node1, port1=port1,
                                 intfName1=intfName1,
+                                wintf=wintf,
                                 cls1=TCWirelessLink,
                                 addr1=addr1,
                                 params1=params)
@@ -1336,9 +1356,9 @@ class Association(object):
         :param ap: access point
         :param wlan: wlan ID"""
 
-        sta.params['freq'][wlan] = ap.get_freq(0)
-        sta.params['channel'][wlan] = ap.params['channel'][0]
-        sta.params['mode'][wlan] = ap.params['mode'][0]
+        sta.intfs[wlan].freq = ap.get_freq(0)
+        sta.intfs[wlan].channel = ap.intfs[1].channel
+        sta.intfs[wlan].mode = ap.intfs[1].mode
 
     @classmethod
     def associate(cls, sta, ap, enable_wmediumd, enable_interference,
@@ -1360,8 +1380,8 @@ class Association(object):
         :param wlan: wlan ID"""
         #iwconfig is still necessary, since iw doesn't include essid like iwconfig does.
         intf = sta.params['wlan'][wlan]
-        ssid = ap.params['ssid'][ap_wlan]
-        mac = ap.params['mac'][ap_wlan]
+        ssid = ap.intfs[ap_wlan+1].ssid
+        mac = ap.intfs[ap_wlan+1].mac
         debug('iwconfig %s essid %s ap %s\n' % (intf, ssid, mac))
         sta.pexec('iwconfig %s essid %s ap %s' % (intf, ssid, mac))
 
@@ -1431,7 +1451,7 @@ class Association(object):
                 for conf in config:
                     cmd += "   " + conf + "\n"
         else:
-            cmd += '   ssid=\"%s\"\n' % ap.params['ssid'][ap_wlan]
+            cmd += '   ssid=\"%s\"\n' % ap.intfs[ap_wlan+1].ssid
             if 'authmode' not in ap.params:
                 cmd += '   psk=\"%s\"\n' % passwd
                 encrypt = ap.params['encrypt'][ap_wlan]
@@ -1478,9 +1498,9 @@ class Association(object):
     @classmethod
     def handover_ieee80211r(cls, sta, ap, wlan, ap_wlan):
         debug('wpa_cli -i %s roam %s\n' % (sta.params['wlan'][wlan],
-                                           ap.params['mac'][ap_wlan]))
+                                           ap.intfs[ap_wlan+1].mac))
         sta.pexec('wpa_cli -i %s roam %s' % (sta.params['wlan'][wlan],
-                                             ap.params['mac'][ap_wlan]))
+                                             ap.intfs[ap_wlan+1].mac))
 
     @classmethod
     def wep(cls, sta, ap, wlan, ap_wlan):
@@ -1494,7 +1514,7 @@ class Association(object):
         else:
             passwd = sta.params['passwd'][wlan]
         sta.pexec('iw dev %s connect %s key d:0:%s' \
-                % (sta.params['wlan'][wlan], ap.params['ssid'][ap_wlan], passwd))
+                % (sta.params['wlan'][wlan], ap.intfs[ap_wlan+1].ssid, passwd))
 
     @classmethod
     def update(cls, sta, ap, wlan):

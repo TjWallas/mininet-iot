@@ -129,6 +129,7 @@ class Mininet_wifi(Mininet):
         self.allAutoAssociation = allAutoAssociation # includes mobility
         self.ppm_is_set = False
         self.DRAW = False
+        self.isReplaying = False
         self.docker = docker
         self.container = container
         self.ssh_user = ssh_user
@@ -560,8 +561,8 @@ class Mininet_wifi(Mininet):
             if dist > ap.params['range'][ap_wlan]:
                 doAssociation = False
         if doAssociation:
-            sta.params['mode'][wlan] = ap.params['mode'][ap_wlan]
-            sta.params['channel'][wlan] = ap.params['channel'][ap_wlan]
+            sta.params['mode'][wlan] = ap.intfs[ap_wlan+1].mode
+            sta.params['channel'][wlan] = ap.intfs[ap_wlan+1].channel
             enable_wmediumd = False
             enable_interference = False
             if self.link == wmediumd:
@@ -764,7 +765,7 @@ class Mininet_wifi(Mininet):
                 self.mob_param['plotNodes'] = self.plot_nodes()
                 mobility.stop(**self.mob_param)
         else:
-            if self.DRAW:
+            if self.DRAW and not self.isReplaying:
                 plotNodes = self.plot_nodes()
                 self.plotCheck(plotNodes)
         self.built = True
@@ -1300,7 +1301,7 @@ class Mininet_wifi(Mininet):
                 if not sta.params['associatedTo'][wlan]:
                     sta.pexec('iw dev %s connect %s %s'
                               % (sta.params['wlan'][wlan],
-                                 ap.params['ssid'][0], ap.params['mac'][0]))
+                                 ap.intfs[1].ssid, ap.intfs[1].mac))
                     sta.params['associatedTo'][wlan] = ap
                     ap.params['associatedStations'].append(sta)
 
@@ -1848,7 +1849,7 @@ class Mininet_wifi(Mininet):
             if sta in mobility.stations:
                 mobility.stations.remove(sta)
 
-        nodes = self.aps + self.stations
+        nodes = self.aps + self.stations + self.cars
 
         if self.nroads == 0:
             for node in nodes:
@@ -1857,7 +1858,8 @@ class Mininet_wifi(Mininet):
                         if self.wmediumd_mode == interference:
                             node.set_pos_wmediumd()
 
-            for node in self.stations:
+            nodes = self.stations + self.cars
+            for node in nodes:
                 if 'position' in node.params and 'link' not in node.params:
                     mobility.aps = self.aps
                     mobility.configLinks(node)

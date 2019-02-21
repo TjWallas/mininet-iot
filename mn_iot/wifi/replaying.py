@@ -8,35 +8,16 @@ author: Ramon Fontes (ramonrf@dca.fee.unicamp.br)
 """
 
 from time import time, sleep
-import threading
+from threading import Thread as thread
 import random
 from pylab import math, cos, sin
 from mininet.log import info
-from mn_iot.wifi.net import Mininet_wifi
-from mn_iot.wifi.plot import plot2d, plot3d, plotGraph
-from mn_iot.wifi.mobility import mobility
-from mn_iot.wifi.link import wirelessLink
-from mn_iot.wifi.devices import GetRate
-from mn_iot.wifi.node import Station, AP
-
-
-def instantiateGraph(Mininet_wifi):
-    'Instantiate Graph'
-    min_x = Mininet_wifi.min_x
-    min_y = Mininet_wifi.min_y
-    min_z = Mininet_wifi.min_z
-    max_x = Mininet_wifi.max_x
-    max_y = Mininet_wifi.max_y
-    max_z = Mininet_wifi.max_z
-    nodes = Mininet_wifi.stations + Mininet_wifi.aps
-    is3d = False
-    for node in nodes:
-        replayingMobility.addNode(node)
-
-    plotGraph(min_x, min_y, min_z, max_x, max_y, max_z, nodes, [])
-    if min_z != 0 or max_z != 0:
-        is3d = True
-    return is3d
+from mn_wifi.net import Mininet_wifi
+from mn_wifi.plot import plot2d, plot3d
+from mn_wifi.mobility import mobility
+from mn_wifi.link import wirelessLink
+from mn_wifi.devices import GetRate
+from mn_wifi.node import Station, AP
 
 
 class replayingMobility(object):
@@ -44,14 +25,30 @@ class replayingMobility(object):
     timestamp = False
 
     def __init__(self, Mininet_wifi, nodes=None):
-        Mininet_wifi.isMobility = True
-        self.thread = threading.Thread(name='replayingMobility',
+        mobility.thread_ = thread(name='replayingMobility',
                                        target=self.mobility,
-                                       args=(Mininet_wifi,nodes,))
-        self.thread.daemon = True
-        self.thread.start()
+                                       args=(nodes,Mininet_wifi,))
+        mobility.thread_.daemon = True
+        mobility.thread_._keep_alive = True
+        mobility.thread_.start()
 
-    def mobility(self, Mininet_wifi, nodes):
+    def timestamp_(self, node, time_):
+        if time_ >= float(node.time[0]):
+            pos = node.position[0]
+            del node.position[0]
+            del node.time[0]
+            node.params['position'] = pos.split(',')
+
+    def notimestamp_(self, node, time_):
+        if time_ >= node.currentTime:
+            for n in range(0, node.params['speed']):
+                if len(node.position) > 0:
+                    pos = node.position[0]
+                    del node.position[0]
+                    node.currentTime += node.timestamp
+                    node.params['position'] = pos.split(',')
+
+    def mobility(self, nodes, Mininet_wifi):
         if nodes is None:
             nodes = Mininet_wifi.stations + Mininet_wifi.aps
         for node in nodes:
@@ -61,61 +58,41 @@ class replayingMobility(object):
             if isinstance(node, AP):
                 if 'position' in node.params and node not in mobility.aps:
                     mobility.aps.append(node)
-        is3d = False
+
         if Mininet_wifi.DRAW:
-            is3d = instantiateGraph(Mininet_wifi)
-        if is3d:
-            plot = plot3d
-        else:
+            Mininet_wifi.isReplaying=False
+            Mininet_wifi.checkDimension(nodes)
             plot = plot2d
+            if Mininet_wifi.max_z != 0:
+                plot = plot3d
+
         currentTime = time()
-        if nodes is None:
-            nodes = Mininet_wifi.stations
         for node in nodes:
-            if 'speed' in node.params:
-                node.lastpos = 0,0,0
-                node.currentTime = 1 / node.params['speed']
-                node.timestamp = float(1.0 / node.params['speed'])
-                node.isStationary = False
+            if 'speed' not in node.params:
+                node.params['speed'] = 1.0
+            node.currentTime = 1 / node.params['speed']
+            node.timestamp = float(1.0 / node.params['speed'])
+            node.isStationary = False
             if hasattr(node, 'time'):
                 self.timestamp = True
+
+        calc_pos = self.notimestamp_
         if self.timestamp:
-            while True:
-                time_ = time() - currentTime
-                sleep(0.00001)
-                if len(nodes) == 0:
-                    break
-                for node in nodes:
-                    if hasattr(node, 'position'):
-                        position_ = (0,0,0)
-                        if time_ >= float(node.time[0]):
-                            position_ = node.position[0]
-                            del node.position[0]
-                            del node.time[0]
-                        if position_ != (0,0,0):
-                            node.setPosition(position_)
-                        if len(node.position) == 0:
-                            nodes.remove(node)
-                        mobility.configLinks()
-                plot.pause()
-        else:
-            while True:
-                time_ = time() - currentTime
-                sleep(0.00001)
-                if len(nodes) == 0:
-                    break
-                for node in nodes:
-                    if hasattr(node, 'position'):
-                        position = (0,0,0)
-                        while time_ >= node.currentTime and len(node.position) != 0:
-                            position = node.position[0]
-                            del node.position[0]
-                            node.currentTime += node.timestamp
-                        if position != (0,0,0):
-                            node.setPosition(position)
-                        if len(node.position) == 0:
-                            nodes.remove(node)
-                        mobility.configLinks()
+            calc_pos = self.timestamp_
+
+        while mobility.thread_._keep_alive:
+            time_ = time() - currentTime
+            if len(nodes) == 0:
+                break
+            for node in nodes:
+                if hasattr(node, 'position'):
+                    calc_pos(node, time_)
+                    if len(node.position) == 0:
+                        nodes.remove(node)
+                    mobility.configLinks()
+                    if Mininet_wifi.DRAW:
+                        plot.update(node)
+            if Mininet_wifi.DRAW:
                 plot.pause()
 
     @classmethod
@@ -132,17 +109,18 @@ class replayingMobility(object):
 class replayingBandwidth(object):
     'Replaying Bandwidth Traces'
 
-    def __init__(self, Mininet_wifi, **params):
-        self.thread = threading.Thread(name='replayingBandwidth',
+    def __init__(self, Mininet_wifi):
+        mobility.thread_ = thread(name='replayingBandwidth',
                                        target=self.throughput, args=(Mininet_wifi,))
-        self.thread.daemon = True
-        self.thread.start()
+        mobility.thread_.daemon = True
+        mobility.thread_._keep_alive = True
+        mobility.thread_.start()
 
     @classmethod
-    def throughput(cls, mininet):
+    def throughput(cls, Mininet_wifi):
         currentTime = time()
-        stations = mininet.stations
-        while True:
+        stations = Mininet_wifi.stations
+        while mobility.thread_._keep_alive:
             if len(stations) == 0:
                 break
             time_ = time() - currentTime
@@ -178,10 +156,11 @@ class replayingNetworkConditions(object):
 
     def __init__(self, Mininet_wifi, **kwargs):
 
-        self.thread = threading.Thread( name='replayingNetConditions',
+        mobility.thread = thread( name='replayingNetConditions',
                                         target=self.behavior, args=(Mininet_wifi,) )
-        self.thread.daemon = True
-        self.thread.start()
+        mobility.thread.daemon = True
+        mobility.thread_._keep_alive = True
+        mobility.thread.start()
 
     @classmethod
     def behavior(cls, Mininet_wifi):
@@ -193,7 +172,7 @@ class replayingNetworkConditions(object):
         stations = Mininet_wifi.stations
         for sta in stations:
             sta.params['freq'][0] = sta.get_freq(0)
-        while True:
+        while mobility.thread_._keep_alive:
             if len(stations) == 0:
                 break
             time_ = time() - currentTime
@@ -237,22 +216,20 @@ class replayingRSSI(object):
         for key in kwargs:
             setattr(self, key, kwargs[key])
 
-        Mininet_wifi.isMobility = True
-        self.thread = threading.Thread(name='replayingRSSI', target=self.rssi,
+        mobility.thread = thread(name='replayingRSSI', target=self.rssi,
                                        args=(Mininet_wifi, propagationModel, n))
-        self.thread.daemon = True
-        self.thread.start()
+        mobility.thread.daemon = True
+        mobility.thread_._keep_alive = True
+        mobility.thread.start()
 
     def rssi(self, Mininet_wifi, propagationModel='', n=0):
-        #if mobility.DRAW:
-        #    instantiateGraph(mininet)
         currentTime = time()
         staList = Mininet_wifi.stations
         ang = {}
         for sta in staList:
             ang[sta] = random.uniform(0, 360)
             sta.params['freq'][0] = sta.get_freq(0)
-        while True:
+        while mobility.thread_._keep_alive:
             if len(staList) == 0:
                 break
             time_ = time() - currentTime
