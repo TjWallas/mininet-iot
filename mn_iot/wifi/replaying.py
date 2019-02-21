@@ -12,12 +12,12 @@ from threading import Thread as thread
 import random
 from pylab import math, cos, sin
 from mininet.log import info
-from mn_wifi.net import Mininet_wifi
-from mn_wifi.plot import plot2d, plot3d
-from mn_wifi.mobility import mobility
-from mn_wifi.link import wirelessLink
-from mn_wifi.devices import GetRate
-from mn_wifi.node import Station, AP
+from mn_iot.wifi.net import Mininet_wifi
+from mn_iot.wifi.plot import plot2d, plot3d
+from mn_iot.wifi.mobility import mobility
+from mn_iot.wifi.link import wirelessLink
+from mn_iot.wifi.devices import GetRate
+from mn_iot.wifi.node import Station, AP
 
 
 class replayingMobility(object):
@@ -38,6 +38,8 @@ class replayingMobility(object):
             del node.position[0]
             del node.time[0]
             node.params['position'] = pos.split(',')
+            if mobility.wmediumd_mode and mobility.wmediumd_mode == 3:
+                node.set_pos_wmediumd()
 
     def notimestamp_(self, node, time_):
         if time_ >= node.currentTime:
@@ -47,6 +49,8 @@ class replayingMobility(object):
                     del node.position[0]
                     node.currentTime += node.timestamp
                     node.params['position'] = pos.split(',')
+                    if mobility.wmediumd_mode and mobility.wmediumd_mode == 3:
+                        node.set_pos_wmediumd()
 
     def mobility(self, nodes, Mininet_wifi):
         if nodes is None:
