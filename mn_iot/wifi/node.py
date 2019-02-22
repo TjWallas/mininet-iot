@@ -1580,7 +1580,7 @@ class AccessPoint(AP):
                 ap.params['txpower'].append(ap.params['txpower'][wlan])
                 ap.params['antennaGain'].append(ap.params['antennaGain'][wlan])
                 ap.params['antennaHeight'].append(ap.params['antennaHeight'][wlan])
-                ssid = ap.intfs[i+1].ssid
+                ssid = ap.params['ssid'][i]
                 cmd = cmd + ('\n')
                 cmd = cmd + ("\nbss=%s" % ap.params['wlan'][i])
                 cmd = cmd + ("\nssid=%s" % ssid)
@@ -1671,9 +1671,8 @@ class AccessPoint(AP):
         else:
             ap.params['mac'][wlan] = \
                 ap.getMAC(ap.params['wlan'][wlan])
-        ap.intfs[wlan+1].mac = ap.params['mac'][wlan]
-        if ap.intfs[wlan+1].mac:
-            cls.checkNetworkManager(ap.intfs[wlan+1].mac)
+        if ap.params['mac'][wlan]:
+            cls.checkNetworkManager(ap.params['mac'][wlan])
         if 'inNamespace' in ap.params and 'ip' in ap.params:
             ap.setIP(ap.params['ip'], intf=ap.params['wlan'][wlan])
 
