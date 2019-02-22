@@ -353,7 +353,7 @@ class w_starter(object):
                 cmdline.append("-x")
                 per_data_file = \
                     pkg_resources.resource_filename(
-                        'mn_iot', 'data/signal_table_ieee80211')
+                        'mn_iot', 'wmediumd/data/signal_table_ieee80211')
                 cmdline.append(per_data_file)
         cmdline[1:1] = kwargs['parameters']
         cls.wmd_logfile = tempfile.NamedTemporaryFile(prefix='mn_wmd_log_',
