@@ -1301,7 +1301,7 @@ class Mininet_wifi(Mininet):
                 if not sta.params['associatedTo'][wlan]:
                     sta.pexec('iw dev %s connect %s %s'
                               % (sta.params['wlan'][wlan],
-                                 ap.intfs[1].ssid, ap.params['mac'][0]))
+                                 ap.params['ssid'][0], ap.params['mac'][0]))
                     sta.params['associatedTo'][wlan] = ap
                     ap.params['associatedStations'].append(sta)
 
