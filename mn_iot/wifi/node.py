@@ -171,18 +171,18 @@ class Node_wifi(Node):
     def setMasterMode(self, intf=None, ssid='-ssid1',
                       **kwargs):
         "set Interface to AP mode"
-        params = dict()
         if not intf:
             intf = self.name + intf
         if not ssid:
             ssid = self.name + ssid
         wlan = self.params['wlan'].index(intf)
+
         self.func[wlan] = 'ap'
         self.params['ssid'] = []
         for wlan_ in range (0, len(self.params['wlan'])):
             self.params['ssid'].append('')
             if wlan == wlan_:
-                self.intfs[wlan+1].ssid = ssid
+                self.params['ssid'][wlan] = ssid
         self.params['driver'] = 'nl80211'
         self.params['associatedStations'] = []
         self.params['stationsInRange'] = {}
@@ -333,14 +333,13 @@ class Node_wifi(Node):
     def setChannel(self, value, intf=None):
         "Set Channel"
         wlan = self.params['wlan'].index(intf)
-        self.intfs[wlan].channel = str(value)
         self.params['channel'][wlan] = str(value)
-        self.intfs[wlan+1].freq = self.get_freq(wlan)
+        self.params['freq'][wlan] = self.get_freq(wlan)
         if isinstance(self, AP) and self.func[wlan] != 'mesh':
             self.pexec(
                 'hostapd_cli -i %s chan_switch %s %s' % (
                     intf, str(value),
-                    str(self.intfs[wlan+1].freq).replace(".", "")))
+                    str(self.params['freq'][wlan]).replace(".", "")))
         else:
             self.cmd('iw dev %s set channel %s'
                      % (self.params['wlan'][wlan], str(value)))
@@ -534,8 +533,8 @@ class Node_wifi(Node):
                     sta.cmd('iw dev %s disconnect' % intf)
                 if 'encrypt' not in ap.params:
                     sta.cmd('iw dev %s connect %s %s' %
-                            (sta.params['wlan'][wlan], ap.intfs[1].ssid,
-                             ap.intfs[0].mac))
+                            (sta.params['wlan'][wlan], ap.params['ssid'][0],
+                             ap.params['mac'][0]))
                     debug ('%s is now associated with %s\n' % (sta, ap))
                 else:
                     if ap.params['encrypt'][0] == 'wpa' or \
@@ -1371,7 +1370,6 @@ class AccessPoint(AP):
     @classmethod
     def configure(cls, aps, driver, link):
         """Configure APs
-
         :param aps: list of access points"""
         for ap in aps:
             if 'vssids' in ap.params:
@@ -1411,13 +1409,11 @@ class AccessPoint(AP):
     @classmethod
     def setConfig(cls, ap, aplist=None, wlan=None, link=None, ssid=None):
         """Configure AP
-
         :param ap: ap node
         :param aplist: list of aps
         :param wlan: wlan id
         :param link: if wmediumd"""
         if ap.params['ssid'][wlan] != '' or ssid:
-            ap.intfs[wlan + 1].ssid = ap.params['ssid'][wlan]
             if 'encrypt' in ap.params and 'config' not in ap.params:
                 if ap.params['encrypt'][wlan] == 'wpa':
                     ap.auth_algs = 1
@@ -1461,9 +1457,9 @@ class AccessPoint(AP):
             cmd = cmd + ("interface=%s" % ap.params['wlan'][wlan])
 
         cmd = cmd + ("\ndriver=%s" % ap.params['driver'])
-        cmd = cmd + ("\nssid=%s" % ap.intfs[wlan+1].ssid)
+        cmd = cmd + ("\nssid=%s" % ap.params['ssid'][wlan])
         cmd = cmd + ('\nwds_sta=1')
-        if ap.intfs[wlan+1].mode == 'n':
+        if ap.params['mode'][wlan] == 'n':
             if 'band' in ap.params:
                 if ap.params['band'] == '5' or ap.params['band'] == 5:
                     cmd = cmd + ("\nhw_mode=a")
@@ -1472,19 +1468,19 @@ class AccessPoint(AP):
                 ap.params.pop("band", None)
             else:
                 cmd = cmd + ("\nhw_mode=g")
-        elif ap.intfs[wlan+1].mode == 'a':
+        elif ap.params['mode'][wlan] == 'a':
             cmd = cmd + ('\ncountry_code=US')
-            cmd = cmd + ("\nhw_mode=%s" % ap.intfs[wlan+1].mode)
-        elif ap.intfs[wlan+1].mode == 'ac':
+            cmd = cmd + ("\nhw_mode=%s" % ap.params['mode'][wlan])
+        elif ap.params['mode'][wlan] == 'ac':
             cmd = cmd + ('\ncountry_code=US')
             cmd = cmd + ("\nhw_mode=a")
-        elif ap.intfs[wlan+1].mode == 'ax':
+        elif ap.params['mode'][wlan] == 'ax':
             cmd = cmd + ('\ncountry_code=US')
             cmd = cmd + ("\nhw_mode=a")
             cmd = cmd + ("\nieee80211ax=1")
         else:
-            cmd = cmd + ("\nhw_mode=%s" % ap.intfs[wlan+1].mode)
-        cmd = cmd + ("\nchannel=%s" % ap.intfs[wlan+1].channel)
+            cmd = cmd + ("\nhw_mode=%s" % ap.params['mode'][wlan])
+        cmd = cmd + ("\nchannel=%s" % ap.params['channel'][wlan])
 
         for arg in args:
             if arg in ap.params:
@@ -1547,10 +1543,10 @@ class AccessPoint(AP):
                         cmd = cmd + ("\nwep_default_key=%s" % 0)
                         cmd = cmd + cls.verifyWepKey(ap.wep_key0)
 
-                if ap.intfs[wlan+1].mode == 'ac':
+                if ap.params['mode'][wlan] == 'ac':
                     cmd = cmd + ("\nwmm_enabled=1")
                     cmd = cmd + ("\nieee80211ac=1")
-                elif ap.intfs[wlan+1].mode == 'n':
+                elif ap.params['mode'][wlan] == 'n':
                     cmd = cmd + ("\nwmm_enabled=1")
                     cmd = cmd + ("\nieee80211n=1")
 
@@ -1565,12 +1561,12 @@ class AccessPoint(AP):
                         for apref in aplist:
                             cmd = cmd + ('\nr0kh=%s r0kh-%s.example.com '
                                          '000102030405060708090a0b0c0d0e0f'
-                                         % (apref.intfs[wlan+1].mac,
+                                         % (apref.params['mac'][wlan],
                                             aplist.index(apref)))
                             cmd = cmd + ('\nr1kh=%s %s '
                                          '000102030405060708090a0b0c0d0e0f'
-                                         % (apref.intfs[wlan+1].mac,
-                                            apref.intfs[wlan+1].mac))
+                                         % (apref.params['mac'][wlan],
+                                            apref.params['mac'][wlan]))
                         #cmd = cmd + ('\nrsn_preauth=1')
                         cmd = cmd + ('\npmk_r1_push=1')
                         cmd = cmd + ('\nft_over_ds=1')
@@ -1616,7 +1612,7 @@ class AccessPoint(AP):
         if setTC:
             AccessPoint.setBw(ap, wlan, iface)
 
-        ap.intfs[wlan+1].freq = ap.get_freq(0)
+        ap.params['freq'][wlan] = ap.get_freq(0)
 
     @classmethod
     def setBw(cls, node, wlan, iface):
@@ -1671,11 +1667,10 @@ class AccessPoint(AP):
         else:
             ap.params['mac'][wlan] = \
                 ap.getMAC(ap.params['wlan'][wlan])
-        if ap.params['mac'][wlan]:
+        if ap.params['mac'][wlan] != None:
             cls.checkNetworkManager(ap.params['mac'][wlan])
         if 'inNamespace' in ap.params and 'ip' in ap.params:
             ap.setIP(ap.params['ip'], intf=ap.params['wlan'][wlan])
-
 
     @classmethod
     def restartNetworkManager(cls):
@@ -1694,7 +1689,6 @@ class AccessPoint(AP):
     def verifyNetworkManager(cls, node, wlan):
         """First verify if the mac address of the ap is included at
         NetworkManager.conf
-
         :param node: node"""
         from mn_iot.wifi.link import IntfWireless
         if 'inNamespace' not in node.params:
@@ -1703,7 +1697,7 @@ class AccessPoint(AP):
                 module.wlan_list.pop(0)
                 IntfWireless.rename(node, wintf, node.params['wlan'][wlan])
         TCLinkWirelessAP(node)
-        # cls.links.append(link)
+        #cls.links.append(link)
         AccessPoint.setIPMAC(node, wlan)
         if 'phywlan' in node.params:
             TCLinkWirelessAP(node, intfName1=node.params['phywlan'])
@@ -1767,8 +1761,8 @@ class AccessPoint(AP):
         cmd = ("hostapd -B %s" % apconfname)
         try:
             ap.cmd(cmd)
-            if int(ap.intfs[wlan+1].channel) == 0 \
-                    or ap.intfs[wlan+1].channel == 'acs_survey':
+            if int(ap.params['channel'][wlan]) == 0 \
+                    or ap.params['channel'][wlan] == 'acs_survey':
                 info("*** Waiting for ACS... It takes 10 seconds.\n")
                 sleep(10)
         except:

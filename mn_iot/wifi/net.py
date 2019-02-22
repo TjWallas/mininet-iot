@@ -561,8 +561,8 @@ class Mininet_wifi(Mininet):
             if dist > ap.params['range'][ap_wlan]:
                 doAssociation = False
         if doAssociation:
-            sta.params['mode'][wlan] = ap.intfs[ap_wlan+1].mode
-            sta.params['channel'][wlan] = ap.intfs[ap_wlan+1].channel
+            sta.params['mode'][wlan] = ap.params['mode'][ap_wlan]
+            sta.params['channel'][wlan] = ap.params['channel'][ap_wlan]
             enable_wmediumd = False
             enable_interference = False
             if self.link == wmediumd:
@@ -1301,7 +1301,7 @@ class Mininet_wifi(Mininet):
                 if not sta.params['associatedTo'][wlan]:
                     sta.pexec('iw dev %s connect %s %s'
                               % (sta.params['wlan'][wlan],
-                                 ap.intfs[1].ssid, ap.intfs[1].mac))
+                                 ap.intfs[1].ssid, ap.params['mac'][0]))
                     sta.params['associatedTo'][wlan] = ap
                     ap.params['associatedStations'].append(sta)
 
