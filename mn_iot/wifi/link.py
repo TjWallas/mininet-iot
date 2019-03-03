@@ -557,7 +557,7 @@ class WirelessLinkAP(object):
         if port1 is not None:
             params1[ 'port' ] = port1
 
-        ifacename = 'wif'
+        ifacename = 'wlan'
 
         if 'port' not in params1:
             if intfName1 is None:
