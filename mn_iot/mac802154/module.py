@@ -13,7 +13,7 @@ from sys import version_info as py_version_info
 class module(object):
     "wireless module"
 
-    wlan_list = []
+    wif_list = []
     hwsim_ids = []
     externally_managed = False
     devices_created_dynamically = False
@@ -86,7 +86,7 @@ class module(object):
             cls.load_module(n_radios, alt_module)  # Initatilize WiFi Module
             n = 0
             for node in nodes:
-                for wlan in range(0, len(node.params['wpan'])):
+                for wif in range(0, len(node.params['wif'])):
                     n += 1
                     if n > 2:
                         os.system('wpan-hwsim add >/dev/null 2>&1')
@@ -99,31 +99,31 @@ class module(object):
 
     @classmethod
     def get_virtual_wpan(cls):
-        'Gets the list of virtual wlans that already exist'
-        cls.wlans = []
+        'Gets the list of virtual wifs that already exist'
+        cls.wifs = []
         if py_version_info < (3, 0):
-            cls.wlans = (subprocess.check_output("iwpan dev 2>&1 | grep Interface "
+            cls.wifs = (subprocess.check_output("iwpan dev 2>&1 | grep Interface "
                                                  "| awk '{print $2}'",
                                                  shell=True)).split("\n")
         else:
-            cls.wlans = (subprocess.check_output("iwpan dev 2>&1 | grep Interface "
+            cls.wifs = (subprocess.check_output("iwpan dev 2>&1 | grep Interface "
                                                  "| awk '{print $2}'",
                                                  shell=True)).decode('utf-8').split("\n")
-        cls.wlans.pop()
-        cls.wlan_list = sorted(cls.wlans)
-        cls.wlan_list.sort(key=len, reverse=False)
-        return cls.wlan_list
+        cls.wifs.pop()
+        cls.wif_list = sorted(cls.wifs)
+        cls.wif_list.sort(key=len, reverse=False)
+        return cls.wif_list
 
     @classmethod
-    def getPhy(cls, wlan):
-        'Gets the list of virtual wlans that already exist'
+    def getPhy(cls, wif):
+        'Gets the list of virtual wifs that already exist'
         if py_version_info < (3, 0):
             phy = (subprocess.check_output("iwpan dev | grep -B 1 %s"
-                                           " | sed -ne '1 s/phy#\([0-9]\)/\\1/p'" % wlan,
+                                           " | sed -ne '1 s/phy#\([0-9]\)/\\1/p'" % wif,
                                            shell=True)).split("\n")
         else:
             phy = (subprocess.check_output("iwpan dev | grep -B 1 %s"
-                                           " | sed -ne '1 s/phy#\([0-9]\)/\\1/p'" % wlan,
+                                           " | sed -ne '1 s/phy#\([0-9]\)/\\1/p'" % wif,
                                            shell=True)).decode('utf-8').split("\n")
         phy.pop()
         return phy[0]
@@ -142,15 +142,15 @@ class module(object):
             debug("\n*** Configuring interfaces with appropriated network"
                   "-namespaces...\n")
             for node in nodes:
-                for wlan in range(0, len(node.params['wpan'])):
-                    node.wpanPhyID[wlan] = cls.wpanPhyID
+                for wif in range(0, len(node.params['wif'])):
+                    node.wpanPhyID[wif] = cls.wpanPhyID
                     cls.wpanPhyID += 1
                     phy = cls.getPhy(phys[0])
                     os.system('iwpan phy phy%s set netns %s' % (phy, node.pid))
-                    node.cmd('ip link set %s down' % cls.wlan_list[0])
+                    node.cmd('ip link set %s down' % cls.wif_list[0])
                     node.cmd('ip link set %s name %s'
-                             % (cls.wlan_list[0], node.params['wpan'][wlan]))
-                    cls.wlan_list.pop(0)
+                             % (cls.wif_list[0], node.params['wif'][wif]))
+                    cls.wif_list.pop(0)
         except:
             logging.exception("Warning:")
             info("Warning! Error when loading mac802154_hwsim. "

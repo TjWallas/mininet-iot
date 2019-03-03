@@ -58,10 +58,10 @@ class IntfWireless(object):
         "Run a command in our owning node"
         return self.node.pexec(*args, **kwargs)
 
-    def wpa_cmd(self, pidfile, intf, wlan):
+    def wpa_cmd(self, pidfile, intf, wif):
         return self.pexec("wpa_supplicant -B -Dnl80211 -P %s "
                           "-i %s -c %s_%s.staconf"
-                          % (pidfile, intf, self.node.name, wlan))
+                          % (pidfile, intf, self.node.name, wif))
 
     def join(self, type=None, ssid=None, freq=None, ht_cap=None, intf=None):
         if type == 'ibss':
@@ -84,7 +84,7 @@ class IntfWireless(object):
 
     def ipAddr(self, *args):
         "Configure ourselves using ip link/addr"
-        if self.name not in self.node.params['wlan']:
+        if self.name not in self.node.params['wif']:
             self.cmd('ip addr flush ', self.name)
             return self.cmd('ip addr add', args[0], 'dev', self.name)
         else:
@@ -451,35 +451,35 @@ class _4address(object):
                 id = hex(int(nums[0]))[2:]
                 node2.params['position'] = (10, round(id,2), 0)
 
-        if cl_intfName not in cl.params['wlan']:
+        if cl_intfName not in cl.params['wif']:
 
             if port1:
-                wlan = cl.params['wlan'].index(port1)
+                wif = cl.params['wif'].index(port1)
             else:
-                wlan = 0
+                wif = 0
 
             if port2:
-                apwlan = ap.params['wlan'].index(port2)
+                apwif = ap.params['wif'].index(port2)
             else:
-                apwlan = 0
+                apwif = 0
 
-            self.add4addrIface(cl, wlan, cl_intfName)
-            cl.params['mac'].append(cl.params['mac'][wlan][:3] +
-                                    '09' + cl.params['mac'][wlan][5:])
-            self.setMAC(cl, wlan)
+            self.add4addrIface(cl, wif, cl_intfName)
+            cl.params['mac'].append(cl.params['mac'][wif][:3] +
+                                    '09' + cl.params['mac'][wif][5:])
+            self.setMAC(cl, wif)
             self.bring4addrIfaceUP(cl)
             cl.func.append('client')
             ap.func.append('ap')
 
-            cl.params['mode'].append(cl.params['mode'][apwlan])
-            cl.params['channel'].append(cl.params['channel'][apwlan])
-            cl.params['freq'].append(cl.params['freq'][apwlan])
+            cl.params['mode'].append(cl.params['mode'][apwif])
+            cl.params['channel'].append(cl.params['channel'][apwif])
+            cl.params['freq'].append(cl.params['freq'][apwif])
             cl.params['txpower'].append(14)
-            cl.params['antennaGain'].append(cl.params['antennaGain'][apwlan])
-            cl.params['wlan'].append(cl_intfName)
+            cl.params['antennaGain'].append(cl.params['antennaGain'][apwif])
+            cl.params['wif'].append(cl_intfName)
             sleep(1)
-            cl.cmd('iw dev %s connect %s %s' % (cl.params['wlan'][1],
-                   ap.params['ssid'][apwlan], ap.params['mac'][apwlan]))
+            cl.cmd('iw dev %s connect %s %s' % (cl.params['wif'][1],
+                   ap.params['ssid'][apwif], ap.params['mac'][apwif]))
 
             params1 = {}
             params2 = {}
@@ -490,9 +490,9 @@ class _4address(object):
                 ap.wds += 1
             else:
                 ap.wds = 1
-            intfName2 = ap.params['wlan'][apwlan] + '.sta%s' % ap.wds
+            intfName2 = ap.params['wif'][apwif] + '.sta%s' % ap.wds
             intf2 = cls(name=intfName2, node=ap, link=self, **params2)
-            ap.params['wlan'].append(intfName2)
+            ap.params['wif'].append(intfName2)
 
         # All we are is dust in the wind, and our two interfaces
         self.intf1, self.intf2 = intf1, intf2
@@ -502,15 +502,15 @@ class _4address(object):
         node.cmd('ip link set dev %s.wds up' % node.name)
 
     @classmethod
-    def setMAC(cls, node, wlan):
+    def setMAC(cls, node, wif):
         nif = len(node.params['mac'])-1
         node.cmd('ip link set dev %s.wds addr %s'
-                 % (node.name, node.params['mac'][wlan+nif]))
+                 % (node.name, node.params['mac'][wif+nif]))
 
     @classmethod
-    def add4addrIface(cls, node, wlan, intfName):
+    def add4addrIface(cls, node, wif, intfName):
         node.cmd('iw dev %s interface add %s type managed 4addr on'
-                 % (node.params['wlan'][wlan], intfName))
+                 % (node.params['wif'][wif], intfName))
 
     def status(self):
         "Return link status as a string"
@@ -557,17 +557,17 @@ class WirelessLinkAP(object):
         if port1 is not None:
             params1[ 'port' ] = port1
 
-        ifacename = 'wlan'
+        ifacename = 'wif'
 
         if 'port' not in params1:
             if intfName1 is None:
-                nodelen = int(len(node1.params['wlan']))
-                currentlen = node1.wlanports
+                nodelen = int(len(node1.params['wif']))
+                currentlen = node1.wifports
                 if nodelen > currentlen + 1:
                     params1[ 'port' ] = node1.newPort()
                 else:
                     params1[ 'port' ] = currentlen
-                intfName1 = self.wlanName(node1, ifacename, params1[ 'port' ])
+                intfName1 = self.wifName(node1, ifacename, params1[ 'port' ])
                 intf1 = cls1(name=intfName1, node=node1,
                              link=self, mac=addr1, **params1)
             else:
@@ -576,12 +576,12 @@ class WirelessLinkAP(object):
                 intf1 = cls1(name=intfName1, node=node1,
                              link=self, mac=addr1, **params1)
         else:
-            intfName1 = self.wlanName(node1, ifacename, params1[ 'port' ])
+            intfName1 = self.wifName(node1, ifacename, params1[ 'port' ])
             intf1 = cls1(name=intfName1, node=node1,
                          link=self, mac=addr1, **params1)
 
         if not intfName1:
-            intfName1 = self.wlanName(node1, ifacename, node1.newWlanPort())
+            intfName1 = self.wifName(node1, ifacename, node1.newWifPort())
 
         if not cls1:
             cls1 = intf
@@ -596,7 +596,7 @@ class WirelessLinkAP(object):
         "Ignore any arguments"
         pass
 
-    def wlanName(self, node, ifacename, n):
+    def wifName(self, node, ifacename, n):
         "Construct a canonical interface name node-ethN for interface n."
         # Leave this as an instance method for now
         assert self
@@ -650,8 +650,8 @@ class WirelessLinkStation(object):
             params1[ 'port' ] = node1.newPort()
 
         if not intfName1:
-            ifacename = 'wlan'
-            intfName1 = self.wlanName(node1, ifacename, node1.newWlanPort())
+            ifacename = 'wif'
+            intfName1 = self.wifName(node1, ifacename, node1.newWifPort())
 
         if not cls1:
             cls1 = intf
@@ -668,7 +668,7 @@ class WirelessLinkStation(object):
         "Ignore any arguments"
         pass
 
-    def wlanName(self, node, ifacename, n):
+    def wifName(self, node, ifacename, n):
         "Construct a canonical interface name node-ethN for interface n."
         # Leave this as an instance method for now
         assert self
@@ -723,30 +723,30 @@ class wmediumd(TCWirelessLink):
     nodes = []
 
     def __init__(self, fading_coefficient, noise_threshold, stations,
-                 aps, cars, propagation_model, maclist=None):
+                 aps, cars, sixlps, propagation_model, maclist=None):
 
         self.configureWmediumd(fading_coefficient, noise_threshold, stations,
-                               aps, cars, propagation_model, maclist)
+                               aps, cars, sixlps, propagation_model, maclist)
 
     @classmethod
     def configureWmediumd(cls, fading_coefficient, noise_threshold, stations,
-                          aps, cars, propagation_model, maclist):
+                          aps, cars, sixlps, propagation_model, maclist):
         "Configure wmediumd"
         intfrefs = []
         isnodeaps = []
         fading_coefficient = fading_coefficient
         noise_threshold = noise_threshold
 
-        cls.nodes = stations + aps + cars
+        cls.nodes = stations + aps + cars + sixlps
         for node in cls.nodes:
             node.wmIface = []
-            for wlan in range(0, len(node.params['wlan'])):
-                if wlan < len(node.params['mac']):
-                    node.wmIface.append(wlan)
-                    node.wmIface[wlan] = DynamicWmediumdIntfRef(node, intf=wlan)
-                    intfrefs.append(node.wmIface[wlan])
-                    if (node.func[wlan] == 'ap' or (node in aps
-                                                    and node.func[wlan] is not 'client')):
+            for wif in range(0, len(node.params['wif'])):
+                if wif < len(node.params['mac']):
+                    node.wmIface.append(wif)
+                    node.wmIface[wif] = DynamicWmediumdIntfRef(node, intf=wif)
+                    intfrefs.append(node.wmIface[wif])
+                    if (node.func[wif] == 'ap' or (node in aps
+                                                    and node.func[wif] is not 'client')):
                         isnodeaps.append(1)
                     else:
                         isnodeaps.append(0)
@@ -755,7 +755,7 @@ class wmediumd(TCWirelessLink):
                     if key == node:
                         key.wmIface.append(DynamicWmediumdIntfRef(key, intf=len(key.wmIface)))
                         key.func.append('none')
-                        key.params['wlan'].append(n[key][1])
+                        key.params['wif'].append(n[key][1])
                         key.params['mac'].append(n[key][0])
                         key.params['range'].append(0)
                         key.params['freq'].append(key.params['freq'][0])
@@ -809,14 +809,14 @@ class set_interference(object):
                 posZ = float(node.params['position'][2])
             node.lastpos = [posX, posY, posZ]
 
-            for wlan in range(0, len(node.params['wlan'])):
-                if wlan >= 1:
+            for wif in range(0, len(node.params['wif'])):
+                if wif >= 1:
                     posX+=0.1
-                if wlan < len(node.params['mac']):
-                    wmediumd.positions.append(w_pos(node.wmIface[wlan],
+                if wif < len(node.params['mac']):
+                    wmediumd.positions.append(w_pos(node.wmIface[wif],
                                                     [posX, posY, posZ]))
                     wmediumd.txpowers.append(w_txpower(
-                        node.wmIface[wlan], float(node.params['txpower'][wlan])))
+                        node.wmIface[wif], float(node.params['txpower'][wif])))
 
 
 class spec_prob_link(object):
@@ -868,13 +868,13 @@ class wirelessLink (object):
     def __init__(self, sta=None, ap=None, dist=0, **params):
         """":param sta: station
         :param ap: access point
-        :param wlan: wlan ID
+        :param wif: wif ID
         :param dist: distance between source and destination"""
-        wlan = params['wlan']
+        wif = params['wif']
         latency_ = self.getLatency(dist)
         loss_ = self.getLoss(dist)
         bw_ = self.getBW(sta=sta, ap=ap, dist=dist, **params)
-        self.config_tc(sta, wlan, bw_, loss_, latency_)
+        self.config_tc(sta, wif, bw_, loss_, latency_)
 
     @classmethod
     def getDelay(cls, dist):
@@ -902,24 +902,24 @@ class wirelessLink (object):
     @classmethod
     def delete(cls, node):
         "Delete interfaces"
-        for wlan in node.params['wlan']:
-            if isinstance(wlan, string_types):
-                node.cmd('iw dev ' + wlan + ' del')
-                node.delIntf(wlan)
+        for wif in node.params['wif']:
+            if isinstance(wif, string_types):
+                node.cmd('iw dev ' + wif + ' del')
+                node.delIntf(wif)
                 node.intf = None
 
     @classmethod
-    def config_tc(cls, node, wlan, bw, loss, latency):
+    def config_tc(cls, node, wif, bw, loss, latency):
         """config_tc
         :param node: node
-        :param wlan: wlan ID
+        :param wif: wif ID
         :param bw: bandwidth (mbps)
         :param loss: loss (%)
         :param latency: latency (ms)"""
         if cls.ifb:
-            iface = 'ifb%s' % node.ifb[wlan]
+            iface = 'ifb%s' % node.ifb[wif]
             cls.tc(node, iface, bw, loss, latency)
-        iface = node.params['wlan'][wlan]
+        iface = node.params['wif'][wif]
         cls.tc(node, iface, bw, loss, latency)
 
     @classmethod
@@ -941,15 +941,15 @@ class ITSLink(IntfWireless):
     def __init__(self, node, port=None, physical=False, **params):
         "configure ieee80211p"
         if port:
-            for port_ in node.params['wlan']:
+            for port_ in node.params['wif']:
                 if params['port'] == port_:
-                    wlan = node.params['wlan'].index(port_)
+                    wif = node.params['wif'].index(port_)
         else:
-            wlan = node.ifaceToAssociate
+            wif = node.ifaceToAssociate
 
-        node.func[wlan] = 'its'
-        node.params['freq'][wlan] = node.get_freq(wlan)
-        node.setOCBIface(wlan)
+        node.func[wif] = 'its'
+        node.params['freq'][wif] = node.get_freq(wif)
+        node.setOCBIface(wif)
 
         if not port:
             node.ifaceToAssociate += 1
@@ -960,11 +960,11 @@ class wifiDirectLink(IntfWireless):
     def __init__(self, node, port=None, physical=False, **params):
         "configure wifi-direct"
         if port:
-            for port_ in node.params['wlan']:
+            for port_ in node.params['wif']:
                 if params['port'] == port_:
-                    wlan = node.params['wlan'].index(port_)
+                    wif = node.params['wif'].index(port_)
         else:
-            wlan = node.ifaceToAssociate
+            wif = node.ifaceToAssociate
 
         if 'position' not in node.params:
             nums = re.findall(r'\d+', node.name)
@@ -972,21 +972,21 @@ class wifiDirectLink(IntfWireless):
                 id = hex(int(nums[0]))[2:]
                 node.params['position'] = (10, round(id,2), 0)
 
-        node.func[wlan] = 'wifiDirect'
+        node.func[wif] = 'wifiDirect'
 
         iface = None
         if physical:
             iface = 'phy' + node.name
-            wlan = 0
-        filename = self.get_filename(node, wlan, iface)
-        self.config_(node, wlan, filename)
+            wif = 0
+        filename = self.get_filename(node, wif, iface)
+        self.config_(node, wif, filename)
 
         if physical:
             iface = params['intf']
             cmd = self.get_wpa_cmd(filename, iface)
             os.system(cmd)
         else:
-            iface = node.params['wlan'][wlan]
+            iface = node.params['wif'][wif]
             cmd = self.get_wpa_cmd(filename, iface)
             node.cmd(self.get_wpa_cmd(filename, cmd))
 
@@ -994,11 +994,11 @@ class wifiDirectLink(IntfWireless):
             node.ifaceToAssociate += 1
 
     @classmethod
-    def get_filename(cls, node, wlan, iface=None):
+    def get_filename(cls, node, wif, iface=None):
         suffix = '_wifiDirect.conf'
-        filename = "mn%d_%s-%s_%s" % (os.getpid(), node, wlan, suffix)
+        filename = "mn%d_%s-%s_%s" % (os.getpid(), node, wif, suffix)
         if iface:
-            filename = "%s-%s_%s" % (iface, wlan, suffix)
+            filename = "%s-%s_%s" % (iface, wif, suffix)
         return filename
 
     @classmethod
@@ -1008,14 +1008,14 @@ class wifiDirectLink(IntfWireless):
         return cmd
 
     @classmethod
-    def config_(cls, node, wlan, filename):
+    def config_(cls, node, wif, filename):
         cmd = ("echo \'")
         cmd += 'ctrl_interface=/var/run/wpa_supplicant\
               \nap_scan=1\
               \np2p_go_ht40=1\
               \ndevice_name=%s-%s\
               \ndevice_type=1-0050F204-1\
-              \np2p_no_group_iface=1' % (node, wlan)
+              \np2p_no_group_iface=1' % (node, wif)
         cmd += ("\' > %s" % filename)
         cls.set_config(cmd)
 
@@ -1040,57 +1040,57 @@ class adhoc(IntfWireless):
         params: parameters for station"""
         self.node = node
         if 'intf' in params:
-            for intf_ in node.params['wlan']:
+            for intf_ in node.params['wif']:
                 if params['intf'] == intf_:
-                    wlan = node.params['wlan'].index(intf_)
+                    wif = node.params['wif'].index(intf_)
         else:
-            wlan = node.ifaceToAssociate
+            wif = node.ifaceToAssociate
 
         node.params['ssid'] = []
-        self.name = node.params['wlan'][wlan]
-        for _ in range(0, len(node.params['wlan'])):
+        self.name = node.params['wif'][wif]
+        for _ in range(0, len(node.params['wif'])):
             node.params['ssid'].append('')
 
-        node.params['ssid'][wlan] = 'adhocNetwork'
+        node.params['ssid'][wif] = 'adhocNetwork'
         ssid = ("%s" % params.pop('ssid', {}))
         if ssid != "{}":
-            node.params['ssid'][wlan] = ssid
+            node.params['ssid'][wif] = ssid
 
         if 'channel' in params:
-            node.setChannel(params['channel'], intf=node.params['wlan'][wlan])
+            node.setChannel(params['channel'], intf=node.params['wif'][wif])
 
         if link and link == wmediumd:
             params['enable_wmediumd'] = True
-        self.configureAdhoc(node, wlan, **params)
+        self.configureAdhoc(node, wif, **params)
         if 'intf' not in params:
             node.ifaceToAssociate += 1
 
-    def configureAdhoc(self, node, wlan, **params):
+    def configureAdhoc(self, node, wif, **params):
         "Configure Wireless Ad Hoc"
-        iface = node.params['wlan'][wlan]
-        ip = node.params['ip'][wlan]
-        node.func[wlan] = 'adhoc'
+        iface = node.params['wif'][wif]
+        ip = node.params['ip'][wif]
+        node.func[wif] = 'adhoc'
         node.setIP(ip, intf='%s' % iface)
         self.setType('ibss')
         if 'position' not in node.params or 'enable_wmediumd' in params:
             if 'passwd' in params:
-                self.setSecuredAdhoc(node, wlan, **params)
+                self.setSecuredAdhoc(node, wif, **params)
             else:
-                ssid = node.params['ssid'][wlan]
-                freq = str(node.params['freq'][wlan]).replace('.', '')
+                ssid = node.params['ssid'][wif]
+                freq = str(node.params['freq'][wif]).replace('.', '')
                 ht_cap = ''
                 if 'ht_cap' in params:
                     ht_cap = params['ht_cap']
                 self.join('ibss', ssid, freq, ht_cap)
 
-    def setSecuredAdhoc(self, node, wlan, **params):
+    def setSecuredAdhoc(self, node, wif, **params):
         "Set secured adhoc"
         cmd = 'ctrl_interface=/var/run/wpa_supplicant GROUP=wheel\n'
         cmd += 'ap_scan=2\n'
         cmd += 'network={\n'
-        cmd += '         ssid="%s"\n' % node.params['ssid'][wlan]
+        cmd += '         ssid="%s"\n' % node.params['ssid'][wif]
         cmd += '         mode=1\n'
-        cmd += '         frequency=%s\n' % str(node.params['freq'][wlan]).replace('.', '')
+        cmd += '         frequency=%s\n' % str(node.params['freq'][wif]).replace('.', '')
         cmd += '         proto=RSN\n'
         cmd += '         key_mgmt=WPA-PSK\n'
         cmd += '         pairwise=CCMP\n'
@@ -1098,11 +1098,11 @@ class adhoc(IntfWireless):
         cmd += '         psk="%s"\n' % params['passwd']
         cmd += '}'
 
-        fileName = '%s_%s.staconf' % (node.name, wlan)
+        fileName = '%s_%s.staconf' % (node.name, wif)
         os.system('echo \'%s\' > %s' % (cmd, fileName))
-        pidfile = "mn%d_%s_%s_wpa.pid" % (os.getpid(), node.name, wlan)
-        intf = node.params['wlan'][wlan]
-        self.wpa_cmd(pidfile, intf, wlan)
+        pidfile = "mn%d_%s_%s_wpa.pid" % (os.getpid(), node.name, wif)
+        intf = node.params['wif'][wif]
+        self.wpa_cmd(pidfile, intf, wif)
 
 
 class mesh(IntfWireless):
@@ -1116,41 +1116,41 @@ class mesh(IntfWireless):
         self.node = node
 
         if 'intf' in params:
-            for intf_ in node.params['wlan']:
+            for intf_ in node.params['wif']:
                 if params['intf'] == intf_:
-                    wlan = node.params['wlan'].index(intf_)
+                    wif = node.params['wif'].index(intf_)
         else:
-            wlan = node.ifaceToAssociate
+            wif = node.ifaceToAssociate
 
         if not isAP:
             node.params['ssid'] = []
-            for _ in range(len(node.params['wlan'])):
+            for _ in range(len(node.params['wif'])):
                 node.params['ssid'].append('')
 
-        node.params['ssid'][wlan] = 'meshNetwork'
+        node.params['ssid'][wif] = 'meshNetwork'
         ssid = ("%s" % params['ssid'])
         if ssid != "{}":
-            node.params['ssid'][wlan] = ssid
+            node.params['ssid'][wif] = ssid
 
-        self.name = node.params['wlan'][wlan]
+        self.name = node.params['wif'][wif]
         self.setMeshIface(node, **params)
 
         if 'intf' not in params:
             node.ifaceToAssociate += 1
 
     def setMeshIface(self, node, ssid='', **params):
-        wlan = node.params['wlan'].index(self.name)
-        intf = node.params['wlan'][wlan]
-        if node.func[wlan] == 'adhoc':
+        wif = node.params['wif'].index(self.name)
+        intf = node.params['wif'][wif]
+        if node.func[wif] == 'adhoc':
             self.setType('managed', intf)
-        self.name = '%s-mp%s' % (node, wlan)
-        if node.func[wlan] == 'mesh' and 'phyap' in params:
-            self.name = '%s-mp%s' % (node, wlan+1)
+        self.name = '%s-mp%s' % (node, wif)
+        if node.func[wif] == 'mesh' and 'phyap' in params:
+            self.name = '%s-mp%s' % (node, wif+1)
 
-        self.setType('mp', node.params['wlan'][wlan])
-        self.setMAC(node.params['mac'][wlan])
+        self.setType('mp', node.params['wif'][wif])
+        self.setMAC(node.params['mac'][wif])
         node.cmd('ip link set %s down' % intf)
-        node.params['wlan'][wlan] = self.name
+        node.params['wif'][wif] = self.name
 
         if 'channel' in params:
             node.setChannel(params['channel'], intf=self.name)
@@ -1159,14 +1159,14 @@ class mesh(IntfWireless):
                                  or params['mode'] == 'ac'):
             node.pexec('iw reg set US')
 
-        intf = node.params['wlan'][wlan]
+        intf = node.params['wif'][wif]
         if 'freq' in params:
             freq = params['freq']
             self.setFreq(freq, intf)
-            self.params['freq'][wlan] = freq
+            self.params['freq'][wif] = freq
 
         if 'ip' in node.params:
-            node.cmd('ip addr add %s dev %s' % (node.params['ip'][wlan],
+            node.cmd('ip addr add %s dev %s' % (node.params['ip'][wif],
                                                 self.name))
         else:
             self.name = intf
@@ -1176,48 +1176,48 @@ class mesh(IntfWireless):
             if 'ssid' not in node.params:
                 node.params['ssid'] = []
                 node.params['ssid'].append(0)
-            node.params['ssid'][wlan] = ssid
-            self.configureMesh(node, wlan, **params)
+            node.params['ssid'][wif] = ssid
+            self.configureMesh(node, wif, **params)
 
-    def configureMesh(self, node, wlan, **params):
+    def configureMesh(self, node, wif, **params):
         "Configure Wireless Mesh Interface"
-        node.func[wlan] = 'mesh'
+        node.func[wif] = 'mesh'
         if 'passwd' in params:
-            self.setSecuredMesh(node, wlan, **params)
+            self.setSecuredMesh(node, wif, **params)
         else:
-            self.associate(node, wlan, **params)
-        if node.params['wlan'][wlan] not in str(node.intf):
-            TCLinkWirelessStation(node, intfName1=node.params['wlan'][wlan])
+            self.associate(node, wif, **params)
+        if node.params['wif'][wif] not in str(node.intf):
+            TCLinkWirelessStation(node, intfName1=node.params['wif'][wif])
 
-    def associate(self, node, wlan, **params):
+    def associate(self, node, wif, **params):
         "Performs Mesh Association"
-        name = node.params['wlan'][wlan]
-        ssid = node.params['ssid'][wlan]
-        freq = str(node.params['freq'][wlan]).replace('.','')
+        name = node.params['wif'][wif]
+        ssid = node.params['ssid'][wif]
+        freq = str(node.params['freq'][wif]).replace('.','')
         ht_cap = ''
         if 'ht_cap' in params:
             ht_cap = params['ht_cap']
         self.join('mesh', ssid, freq, ht_cap, name)
 
-    def setSecuredMesh(self, node, wlan, **params):
+    def setSecuredMesh(self, node, wif, **params):
         "Set secured mesh"
         cmd = 'ctrl_interface=/var/run/wpa_supplicant\n'
         cmd += 'ctrl_interface_group=adm\n'
         cmd += 'user_mpm=1\n'
         cmd += 'network={\n'
-        cmd += '         ssid="%s"\n' % node.params['ssid'][wlan]
+        cmd += '         ssid="%s"\n' % node.params['ssid'][wif]
         cmd += '         mode=5\n'
         cmd += '         frequency=%s\n' \
-               % str(node.params['freq'][wlan]).replace('.', '')
+               % str(node.params['freq'][wif]).replace('.', '')
         cmd += '         key_mgmt=SAE\n'
         cmd += '         psk="%s"\n' % params['passwd']
         cmd += '}'
 
-        fileName = '%s_%s.staconf' % (node.name, wlan)
+        fileName = '%s_%s.staconf' % (node.name, wif)
         os.system('echo \'%s\' > %s' % (cmd, fileName))
-        pidfile = "mn%d_%s_%s_wpa.pid" % (os.getpid(), node.name, wlan)
-        intf = node.params['wlan'][wlan]
-        self.wpa_cmd(pidfile, intf, wlan)
+        pidfile = "mn%d_%s_%s_wpa.pid" % (os.getpid(), node.name, wif)
+        intf = node.params['wif'][wif]
+        self.wpa_cmd(pidfile, intf, wif)
 
 
 class physicalMesh(IntfWireless):
@@ -1227,36 +1227,36 @@ class physicalMesh(IntfWireless):
         node: name of the node
         self: custom association class/constructor
         params: parameters for node"""
-        wlan = node.ifaceToAssociate
+        wif = node.ifaceToAssociate
 
         if not isAP:
             node.params['ssid'] = []
-            for _ in range(len(node.params['wlan'])):
+            for _ in range(len(node.params['wif'])):
                 node.params['ssid'].append('')
 
-        node.params['ssid'][wlan] = 'meshNetwork'
+        node.params['ssid'][wif] = 'meshNetwork'
         ssid = ("%s" % params['ssid'])
         if ssid != "{}":
-            node.params['ssid'][wlan] = ssid
+            node.params['ssid'][wif] = ssid
 
-        if int(node.params['range'][wlan]) == 0:
-            intf = node.params['wlan'][wlan]
-            node.params['range'][wlan] = node.getRange(intf=intf, noiseLevel=95)
+        if int(node.params['range'][wif]) == 0:
+            intf = node.params['wif'][wif]
+            node.params['range'][wif] = node.getRange(intf=intf, noiseLevel=95)
 
         params['phyap'] = True
-        mesh.setMeshIface(node, node.params['wlan'][wlan], **params)
+        mesh.setMeshIface(node, node.params['wif'][wif], **params)
         self.setPhysicalMeshIface(node, **params)
-        ssid = node.params['ssid'][wlan]
-        freq = node.params['freq'][wlan]
-        iface = node.params['wlan'][wlan]
+        ssid = node.params['ssid'][wif]
+        freq = node.params['freq'][wif]
+        iface = node.params['wif'][wif]
         ht_cap = ''
         self.join('mesh', ssid, freq, ht_cap, iface)
 
         node.ifaceToAssociate += 1
 
     def setPhysicalMeshIface(self, node, **params):
-        wlan = 0
-        iface = 'phy%s-mp%s' % (node, wlan)
+        wif = 0
+        iface = 'phy%s-mp%s' % (node, wif)
         os.system('ip link set %s down' % params['intf'])
         while True:
             id = ''
@@ -1277,9 +1277,9 @@ class physicalMesh(IntfWireless):
                         subprocess.check_output(command, shell=True)
                     os.system('ip link set %s up' % iface)
                     debug("associating %s to %s...\n" %
-                          (iface, node.params['ssid'][wlan]))
+                          (iface, node.params['ssid'][wif]))
                     command = ('iw dev %s mesh join %s' %
-                               (iface, node.params['ssid'][wlan]))
+                               (iface, node.params['ssid'][wif]))
                     subprocess.check_output(command, shell=True)
                     break
                 except:
@@ -1304,15 +1304,15 @@ class Association(object):
         """Updates RSSI and Others...
         :param sta: station
         :param ap: access point
-        :param ap_wlan: AP wlan ID"""
+        :param ap_wif: AP wif ID"""
         dist = sta.get_distance_to(ap)
-        wlan = params['wlan']
+        wif = params['wif']
         if dist <= ap.params['range'][0]:
             if not enable_interference:
-                if sta.params['rssi'][wlan] == 0:
-                    cls.updateParams(sta, ap, wlan)
-            if ('doAssociation' in params and ap != sta.params['associatedTo'][wlan]) or \
-                    (not sta.params['associatedTo'][wlan]
+                if sta.params['rssi'][wif] == 0:
+                    cls.updateParams(sta, ap, wif)
+            if ('doAssociation' in params and ap != sta.params['associatedTo'][wif]) or \
+                    (not sta.params['associatedTo'][wif]
                      and ap not in sta.params['associatedTo']):
                 cls.associate_infra(sta, ap, **params)
                 if not enable_wmediumd:
@@ -1321,23 +1321,23 @@ class Association(object):
                 if sta not in ap.params['associatedStations']:
                     ap.params['associatedStations'].append(sta)
             if not enable_interference:
-                rssi = sta.set_rssi(ap, wlan, dist)
-                sta.params['rssi'][wlan] = rssi
+                rssi = sta.get_rssi(ap, wif, dist)
+                sta.params['rssi'][wif] = rssi
             if ap not in sta.params['apsInRange']:
                 sta.params['apsInRange'].append(ap)
                 if not enable_interference:
                     ap.params['stationsInRange'][sta] = rssi
 
     @classmethod
-    def updateParams(cls, sta, ap, wlan):
+    def updateParams(cls, sta, ap, wif):
         """
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID"""
+        :param wif: wif ID"""
 
-        sta.params['freq'][wlan] = ap.get_freq(0)
-        sta.params['channel'][wlan] = ap.params['channel'][0]
-        sta.params['mode'][wlan] = ap.params['mode'][0]
+        sta.params['freq'][wif] = ap.get_freq(0)
+        sta.params['channel'][wif] = ap.params['channel'][0]
+        sta.params['mode'][wif] = ap.params['mode'][0]
 
     @classmethod
     def associate(cls, sta, ap, enable_wmediumd, enable_interference,
@@ -1351,15 +1351,15 @@ class Association(object):
         sta.ifaceToAssociate += 1
 
     @classmethod
-    def associate_noEncrypt(cls, sta, ap, wlan, ap_wlan):
+    def associate_noEncrypt(cls, sta, ap, wif, ap_wif):
         """Association when there is no encrypt
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID"""
+        :param wif: wif ID"""
         #iwconfig is still necessary, since iw doesn't include essid like iwconfig does.
-        intf = sta.params['wlan'][wlan]
-        ssid = ap.params['ssid'][ap_wlan]
-        mac = ap.params['mac'][ap_wlan]
+        intf = sta.params['wif'][wif]
+        ssid = ap.params['ssid'][ap_wif]
+        mac = ap.params['mac'][ap_wif]
         debug('iwconfig %s essid %s ap %s\n' % (intf, ssid, mac))
         sta.pexec('iwconfig %s essid %s ap %s' % (intf, ssid, mac))
 
@@ -1368,54 +1368,54 @@ class Association(object):
         """Association when infra
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID"""
-        wlan = params['wlan']
-        ap_wlan = params['ap_wlan']
+        :param wif: wif ID"""
+        wif = params['wif']
+        ap_wif = params['ap_wif']
         associated = 0
         if 'ieee80211r' in ap.params and ap.params['ieee80211r'] == 'yes' \
         and ('encrypt' not in sta.params or 'encrypt' in sta.params and
-             'wpa' in sta.params['encrypt'][wlan]):
-            if not sta.params['associatedTo'][wlan]:
-                command = ('ps -aux | grep %s | wc -l' % sta.params['wlan'][wlan])
+             'wpa' in sta.params['encrypt'][wif]):
+            if not sta.params['associatedTo'][wif]:
+                command = ('ps -aux | grep %s | wc -l' % sta.params['wif'][wif])
                 np = int(subprocess.check_output(command, shell=True))
                 if np == 2:
-                    cls.wpa(sta, ap, wlan, ap_wlan)
+                    cls.wpa(sta, ap, wif, ap_wif)
                 else:
-                    cls.handover_ieee80211r(sta, ap, wlan, ap_wlan)
+                    cls.handover_ieee80211r(sta, ap, wif, ap_wif)
             else:
-                cls.handover_ieee80211r(sta, ap, wlan, ap_wlan)
+                cls.handover_ieee80211r(sta, ap, wif, ap_wif)
             associated = 1
         elif 'encrypt' not in ap.params:
             associated = 1
-            cls.associate_noEncrypt(sta, ap, wlan, ap_wlan)
+            cls.associate_noEncrypt(sta, ap, wif, ap_wif)
         else:
-            if not sta.params['associatedTo'][wlan]:
-                if 'wpa' in ap.params['encrypt'][ap_wlan] \
+            if not sta.params['associatedTo'][wif]:
+                if 'wpa' in ap.params['encrypt'][ap_wif] \
                 and ('encrypt' not in sta.params or 'encrypt' in sta.params and
-                     'wpa' in sta.params['encrypt'][wlan]):
-                    cls.wpa(sta, ap, wlan, ap_wlan)
+                     'wpa' in sta.params['encrypt'][wif]):
+                    cls.wpa(sta, ap, wif, ap_wif)
                     associated = 1
-                elif ap.params['encrypt'][ap_wlan] == 'wep':
-                    cls.wep(sta, ap, wlan, ap_wlan)
+                elif ap.params['encrypt'][ap_wif] == 'wep':
+                    cls.wep(sta, ap, wif, ap_wif)
                     associated = 1
         if 'printCon' in params:
-            iface = sta.params['wlan'][wlan]
+            iface = sta.params['wif'][wif]
             info("Associating %s to %s\n" % (iface, ap))
         if associated:
-            cls.update(sta, ap, wlan)
+            cls.update(sta, ap, wif)
 
     @classmethod
-    def wpaFile(cls, sta, ap, wlan, ap_wlan):
+    def wpaFile(cls, sta, ap, wif, ap_wif):
         """creates wpa config file
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID"""
+        :param wif: wif ID"""
         if 'config' not in ap.params or 'config' not in sta.params:
             if 'authmode' not in ap.params:
                 if 'passwd' not in sta.params:
-                    passwd = ap.params['passwd'][ap_wlan]
+                    passwd = ap.params['passwd'][ap_wif]
                 else:
-                    passwd = sta.params['passwd'][wlan]
+                    passwd = sta.params['passwd'][wif]
 
         cmd = 'ctrl_interface=/var/run/wpa_supplicant\nnetwork={\n'
 
@@ -1427,22 +1427,22 @@ class Association(object):
                 for conf in config:
                     cmd += "   " + conf + "\n"
         else:
-            cmd += '   ssid=\"%s\"\n' % ap.params['ssid'][ap_wlan]
+            cmd += '   ssid=\"%s\"\n' % ap.params['ssid'][ap_wif]
             if 'authmode' not in ap.params:
                 cmd += '   psk=\"%s\"\n' % passwd
-                encrypt = ap.params['encrypt'][ap_wlan]
-                if ap.params['encrypt'][ap_wlan] == 'wpa3':
+                encrypt = ap.params['encrypt'][ap_wif]
+                if ap.params['encrypt'][ap_wif] == 'wpa3':
                     encrypt = 'wpa2'
                 cmd += '   proto=%s\n' % encrypt.upper()
                 cmd += '   pairwise=%s\n' % ap.rsn_pairwise
                 if 'active_scan' in sta.params and sta.params['active_scan'] == 1:
                     cmd += '   scan_ssid=1\n'
-                if 'scan_freq' in sta.params and sta.params['scan_freq'][wlan]:
-                    cmd += '   scan_freq=%s\n' % sta.params['scan_freq'][wlan]
-                if 'freq_list' in sta.params and sta.params['freq_list'][wlan]:
-                    cmd += '   freq_list=%s\n' % sta.params['freq_list'][wlan]
+                if 'scan_freq' in sta.params and sta.params['scan_freq'][wif]:
+                    cmd += '   scan_freq=%s\n' % sta.params['scan_freq'][wif]
+                if 'freq_list' in sta.params and sta.params['freq_list'][wif]:
+                    cmd += '   freq_list=%s\n' % sta.params['freq_list'][wif]
             wpa_key_mgmt = ap.wpa_key_mgmt
-            if ap.params['encrypt'][ap_wlan] == 'wpa3':
+            if ap.params['encrypt'][ap_wif] == 'wpa3':
                 wpa_key_mgmt = 'SAE'
             cmd += '   key_mgmt=%s\n' % wpa_key_mgmt
             if cls.bgscan:
@@ -1454,53 +1454,53 @@ class Association(object):
                 cmd += '   phase2=\"autheap=MSCHAPV2\"\n'
         cmd += '}'
 
-        fileName = '%s_%s.staconf' % (sta.name, wlan)
+        fileName = '%s_%s.staconf' % (sta.name, wif)
         os.system('echo \'%s\' > %s' % (cmd, fileName))
 
     @classmethod
-    def wpa(cls, sta, ap, wlan, ap_wlan):
+    def wpa(cls, sta, ap, wif, ap_wif):
         """Association when WPA
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID"""
-        pidfile = "mn%d_%s_%s_wpa.pid" % (os.getpid(), sta.name, wlan)
-        cls.wpaFile(sta, ap, wlan, ap_wlan)
+        :param wif: wif ID"""
+        pidfile = "mn%d_%s_%s_wpa.pid" % (os.getpid(), sta.name, wif)
+        cls.wpaFile(sta, ap, wif, ap_wif)
         debug("wpa_supplicant -B -Dnl80211 -P %s -i %s -c %s_%s.staconf\n"
-              % (pidfile, sta.params['wlan'][wlan], sta.name, wlan))
+              % (pidfile, sta.params['wif'][wif], sta.name, wif))
         sta.pexec("wpa_supplicant -B -Dnl80211 -P %s -i %s -c %s_%s.staconf"
-                  % (pidfile, sta.params['wlan'][wlan], sta.name, wlan))
+                  % (pidfile, sta.params['wif'][wif], sta.name, wif))
 
     @classmethod
-    def handover_ieee80211r(cls, sta, ap, wlan, ap_wlan):
-        debug('wpa_cli -i %s roam %s\n' % (sta.params['wlan'][wlan],
-                                           ap.params['mac'][ap_wlan]))
-        sta.pexec('wpa_cli -i %s roam %s' % (sta.params['wlan'][wlan],
-                                             ap.params['mac'][ap_wlan]))
+    def handover_ieee80211r(cls, sta, ap, wif, ap_wif):
+        debug('wpa_cli -i %s roam %s\n' % (sta.params['wif'][wif],
+                                           ap.params['mac'][ap_wif]))
+        sta.pexec('wpa_cli -i %s roam %s' % (sta.params['wif'][wif],
+                                             ap.params['mac'][ap_wif]))
 
     @classmethod
-    def wep(cls, sta, ap, wlan, ap_wlan):
+    def wep(cls, sta, ap, wif, ap_wif):
         """Association when WEP
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID"""
+        :param wif: wif ID"""
         if 'passwd' not in sta.params:
-            passwd = ap.params['passwd'][ap_wlan]
+            passwd = ap.params['passwd'][ap_wif]
         else:
-            passwd = sta.params['passwd'][wlan]
+            passwd = sta.params['passwd'][wif]
         sta.pexec('iw dev %s connect %s key d:0:%s' \
-                % (sta.params['wlan'][wlan], ap.params['ssid'][ap_wlan], passwd))
+                % (sta.params['wif'][wif], ap.params['ssid'][ap_wif], passwd))
 
     @classmethod
-    def update(cls, sta, ap, wlan):
+    def update(cls, sta, ap, wif):
         """Updates attributes regarding association
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID"""
-        if sta.params['associatedTo'][wlan] != 'active_scan' \
-            and sta.params['associatedTo'][wlan] != 'bgscan':
-            if sta.params['associatedTo'][wlan] \
-                    and sta in sta.params['associatedTo'][wlan].params['associatedStations']:
-                sta.params['associatedTo'][wlan].params['associatedStations'].remove(sta)
-            cls.updateParams(sta, ap, wlan)
+        :param wif: wif ID"""
+        if sta.params['associatedTo'][wif] != 'active_scan' \
+            and sta.params['associatedTo'][wif] != 'bgscan':
+            if sta.params['associatedTo'][wif] \
+                    and sta in sta.params['associatedTo'][wif].params['associatedStations']:
+                sta.params['associatedTo'][wif].params['associatedStations'].remove(sta)
+            cls.updateParams(sta, ap, wif)
             ap.params['associatedStations'].append(sta)
-            sta.params['associatedTo'][wlan] = ap
+            sta.params['associatedTo'][wif] = ap

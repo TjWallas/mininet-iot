@@ -18,12 +18,12 @@ class Intfmac802154( object ):
         self.name = name
         self.link = link
         self.mac = mac
-        self.wpan_ip, self.prefixLen = None, None
+        self.wif_ip, self.prefixLen = None, None
 
         # if interface is lo, we know the ip is 127.0.0.1.
         # This saves an ipaddr command per node
         if self.name == 'lo':
-            self.wpan_ip = '127.0.0.1'
+            self.wif_ip = '127.0.0.1'
             self.prefixLen = 8
         # Add to node (and move ourselves if necessary )
         if node:
@@ -57,13 +57,13 @@ class Intfmac802154( object ):
         # This is a sign that we should perhaps rethink our prefix
         # mechanism and/or the way we specify IP addresses
         if '/' in ipstr:
-            self.wpan_ip, self.prefixLen = ipstr.split( '/' )
+            self.wif_ip, self.prefixLen = ipstr.split( '/' )
             return self.ipAddr( ipstr )
         else:
             if prefixLen is None:
                 raise Exception( 'No prefix length set for IP address %s'
                                  % ( ipstr, ) )
-            self.wpan_ip, self.prefixLen = ipstr, prefixLen
+            self.wif_ip, self.prefixLen = ipstr, prefixLen
             return self.ipAddr('%s/%s' % (ipstr, prefixLen))
 
     def setMAC(self, macstr):
@@ -87,8 +87,8 @@ class Intfmac802154( object ):
             ips = self._ipMatchRegex.findall(ipAddr)
         else:
             ips = self._ipMatchRegex.findall(ipAddr.decode('utf-8'))
-        self.wpan_ip = ips[0] if ips else None
-        return self.wpan_ip
+        self.wif_ip = ips[0] if ips else None
+        return self.wif_ip
 
     def updateMAC(self):
         "Return updated MAC address based on ip addr"
@@ -113,13 +113,13 @@ class Intfmac802154( object ):
         else:
             ips = self._ipMatchRegex.findall(ipAddr)
             macs = self._macMatchRegex.findall(ipAddr.decode('utf-8'))
-        self.wpan_ip = ips[0] if ips else None
+        self.wif_ip = ips[0] if ips else None
         self.mac = macs[0] if macs else None
-        return self.wpan_ip, self.mac
+        return self.wif_ip, self.mac
 
     def IP( self ):
         "Return IP address"
-        return self.wpan_ip
+        return self.wif_ip
 
     def MAC( self ):
         "Return MAC address"
@@ -171,7 +171,7 @@ class Intfmac802154( object ):
         results[ name ] = result
         return result
 
-    def config( self, mac=None, wpan_ip=None, ipAddr=None,
+    def config( self, mac=None, wif_ip=None, ipAddr=None,
                 up=True, **_params ):
         """Configure Node according to (optional) parameters:
            mac: MAC address
@@ -184,14 +184,14 @@ class Intfmac802154( object ):
         # r = Parent.config( **params )
         r = {}
         self.setParam( r, 'setMAC', mac=mac )
-        self.setParam( r, 'setIP', ip=wpan_ip )
+        self.setParam( r, 'setIP', ip=wif_ip )
         self.setParam( r, 'isUp', up=up )
         self.setParam(r, 'ipAddr', ipAddr=ipAddr)
         return r
 
     def delete( self ):
         "Delete interface"
-        self.cmd( 'iwpan dev ' + self.node.params['wpan'][0] + ' del' )
+        self.cmd( 'iwpan dev ' + self.node.params['wif'][0] + ' del' )
         # We used to do this, but it slows us down:
         # if self.node.inNamespace:
         # Link may have been dumped into root NS
@@ -223,11 +223,11 @@ class mac802154Link(object):
            intf: default interface class/constructor"""
 
         node.cmd('ip link set lo up')
-        node.cmd('ip link set %s down' % node.params['wpan'][0])
-        node.cmd('iwpan dev %s set pan_id "%s"' % (node.params['wpan'][0], params['panid']))
+        node.cmd('ip link set %s down' % node.params['wif'][0])
+        node.cmd('iwpan dev %s set pan_id "%s"' % (node.params['wif'][0], params['panid']))
         node.cmd('ip link add link %s name %s-lowpan type lowpan'
-                 % (node.params['wpan'][0], node.name))
-        node.cmd('ip link set %s up' % node.params['wpan'][0])
+                 % (node.params['wif'][0], node.name))
+        node.cmd('ip link set %s up' % node.params['wif'][0])
         node.cmd('ip link set %s-lowpan up' % node.name)
 
         if params is None:
@@ -241,7 +241,7 @@ class mac802154Link(object):
             intfName1 = self.wpanName(node, ifacename, node.newWpanPort())
         if not cls:
             cls = Intfmac802154
-        params['wpan_ip'] = node.params['wpan_ip']
+        params['wif_ip'] = node.params['wif_ip']
         params['name'] = intfName1
 
         intf1 = cls(node=node, mac=addr, link=self, **params)

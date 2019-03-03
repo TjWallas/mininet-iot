@@ -45,7 +45,7 @@ class Node_mac802154(Node):
 
         self.intfs = {}  # dict of port numbers to interfaces
         self.ports = {}  # dict of interfaces to port numbers
-        self.wpanports = -1  # dict of wlan interfaces to port numbers
+        self.wpanports = -1  # dict of wif interfaces to port numbers
         self.nameToIntf = {}  # dict of interface names to Intfs
 
         self.func = []
@@ -388,6 +388,18 @@ class Node_mac802154(Node):
                 debug('moving', intf, 'into namespace for', self.name, '\n')
                 moveIntfFn(intf.name, self)
 
+    def getMAC(self, iface):
+        "get Mac Address of any Interface"
+        try:
+            _macMatchRegex = re.compile(r'..:..:..:..:..:..:..:..')
+            debug('getting mac address from %s\n' % iface)
+            macaddr = str(self.pexec('ip addr show %s' % iface))
+            mac = _macMatchRegex.findall(macaddr)
+            debug('%s\n' % mac[0])
+            return mac[0]
+        except:
+            info('Please run sudo mn -c.\n')
+
     def delIntf(self, intf):
         """Remove interface from Node's known interfaces
            Note: to fully delete interface, call intf.delete() instead"""
@@ -488,9 +500,9 @@ class Node_mac802154(Node):
            ip: IP address as a string
            prefixLen: prefix length, e.g. 8 for /8 or 16M addrs
            kwargs: any additional arguments for intf.setIP"""
-        if intf in self.params['wpan']:
-            wpan = int(intf[-1:])
-            self.params['wpan_ip'][wpan] = ip
+        if intf in self.params['wif']:
+            wif = int(intf[-1:])
+            self.params['wif_ip'][wif] = ip
 
         return self.intf(intf).setIP(ip, prefixLen, **kwargs)
 

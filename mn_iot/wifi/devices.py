@@ -15,7 +15,7 @@ class GetRate (object):
         "get data rate"
         ap = kwargs['ap'] if 'ap' in kwargs else None
         sta = kwargs['sta'] if 'sta' in kwargs else None
-        wlan = kwargs['wlan'] if 'wlan' in kwargs else 0
+        wif = kwargs['wif'] if 'wif' in kwargs else 0
         if ap and 'model' in ap.params:
             if ap.model in dir(self) and sta:
                 model = ap.model
@@ -24,8 +24,8 @@ class GetRate (object):
             node = sta
             if ap:
                 node = ap
-                wlan = kwargs['ap_wlan']
-            self.customDataRate_mobility(node=node, wlan=wlan)
+                wif = kwargs['ap_wif']
+            self.customDataRate_mobility(node=node, wif=wif)
 
     def customDataRate_mobility(self, **kwargs):
         """Custom Maximum Data Rate - Useful when there is mobility
@@ -33,8 +33,8 @@ class GetRate (object):
         mode: interface mode
         rate: maximum supported bandwidth (mbps)"""
         node = kwargs['node']
-        wlan = kwargs['wlan']
-        mode = node.params['mode'][wlan]
+        wif = kwargs['wif']
+        mode = node.params['mode'][wif]
         rate = 0
 
         if mode == 'a':
@@ -57,8 +57,8 @@ class GetRate (object):
         mode: interface mode
         rate: maximum supported bandwidth (mbps)"""
         node = kwargs['node']
-        wlan = kwargs['wlan']
-        mode = node.params['mode'][wlan]
+        wif = kwargs['wif']
+        mode = node.params['mode'][wif]
         rate = 0
 
         if mode == 'a':
@@ -83,11 +83,11 @@ class GetRate (object):
         rssi: rssi value (dBm)
         rate: maximum supported bandwidth (mbps)"""
         node = kwargs['sta']
-        wlan = kwargs['wlan']
+        wif = kwargs['wif']
         rate = 0
 
-        if node.params['rssi'][wlan] != 0:
-            rssi = node.params['rssi'][wlan]
+        if node.params['rssi'][wif] != 0:
+            rssi = node.params['rssi'][wif]
             if rssi >= -68:
                 rate = 48
             elif -75 <= rssi < -68:
@@ -115,13 +115,13 @@ class GetRate (object):
         rssi: rssi value (dBm)
         rate: maximum supported bandwidth (mbps)"""
         node = kwargs['sta']
-        wlan = kwargs['wlan']
-        mode = node.params['mode'][wlan]
+        wif = kwargs['wif']
+        mode = node.params['mode'][wif]
         rate = 0
 
         if node:
-            if node.params['rssi'][wlan] != 0:
-                rssi = node.params['rssi'][wlan]
+            if node.params['rssi'][wif] != 0:
+                rssi = node.params['rssi'][wif]
                 if rssi >= -68:
                     if mode == 'n':
                         rate = 130
@@ -156,12 +156,12 @@ class GetRate (object):
         rate: maximum supported bandwidth (mbps)"""
         node1 = kwargs['sta']
         node2 = kwargs['ap']
-        wlan = kwargs['wlan']
+        wif = kwargs['wif']
         mode = node2.params['mode'][0]
         rate = 0
 
         if node1:
-            rssi = node1.params['rssi'][wlan]
+            rssi = node1.params['rssi'][wif]
             if rssi != 0:
                 if rssi >= -65:
                     if mode == 'n':
@@ -199,14 +199,14 @@ class GetRange (object):
     def __init__(self, **kwargs):
         "get signal range"
         node = kwargs['node'] if 'node' in kwargs else None
-        wlan = kwargs['wlan'] if 'wlan' in kwargs else 0
+        wif = kwargs['wif'] if 'wif' in kwargs else 0
 
         if node and 'model' in node.params:
             model = node.params['model']
             if model in dir(self):
                 self.__getattribute__(model)(node=node)
         else:
-            self.customSignalRange(node=node, wlan=wlan)
+            self.customSignalRange(node=node, wif=wif)
 
     def customSignalRange(self, **kwargs):
         """Custom Signal Range
@@ -214,8 +214,8 @@ class GetRange (object):
         mode: interface mode
         range: signal range (m)"""
         node = kwargs['node']
-        wlan = kwargs['wlan']
-        mode = node.params['mode'][wlan]
+        wif = kwargs['wif']
+        mode = node.params['mode'][wif]
 
         if mode == 'a':
             range_ = 33
@@ -272,12 +272,12 @@ class GetTxPower (object):
     def __init__(self, **kwargs):
         "get txpower"
         node = kwargs['ap'] if 'ap' in kwargs else None
-        wlan = kwargs['wlan'] if 'wlan' in kwargs else 0
+        wif = kwargs['wif'] if 'wif' in kwargs else 0
 
         if node and 'model' in node.params:
             model = node.params['model']
             if model in dir(self):
-                self.__getattribute__(model)(node=node, wlan=wlan)
+                self.__getattribute__(model)(node=node, wif=wif)
 
     def DI524(self, **kwargs):
         """D-Link AirPlus G DI-524
@@ -301,8 +301,8 @@ class GetTxPower (object):
            from http://downloads.linksys.com/downloads/datasheet/
            WRT120N_V10_DS_B-WEB.pdf"""
         ap = kwargs['ap']
-        wlan = kwargs['wlan']
-        mode = ap.params['mode'][wlan]
+        wif = kwargs['wif']
+        mode = ap.params['mode'][wif]
 
         if mode == 'b':
             self.value = 21

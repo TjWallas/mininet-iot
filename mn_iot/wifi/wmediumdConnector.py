@@ -619,17 +619,17 @@ class DynamicWmediumdIntfRef(WmediumdIntfRef):
 
     def get_intf_name(self):
         if not self.__intf:
-            return self.__sta.params['wlan'][0]
+            return self.__sta.params['wif'][0]
         elif isinstance(self.__intf, str):
             return self.__intf
         elif isinstance(self.__intf, int):
-            return self.__sta.params['wlan'][self.__intf]
+            return self.__sta.params['wif'][self.__intf]
 
     def get_mac(self):
         intf_name = self.get_intf_name()
         index = 0
         found = False
-        for wlan_intf in self.__sta.params['wlan']:
+        for wif_intf in self.__sta.params['wif']:
             if wlan_intf == intf_name:
                 found = True
                 break

@@ -44,7 +44,7 @@ class Mininet_mac802154(Mininet):
     links = []
     sixLP = []
     terms = []  # list of spawned xterm processes
-    n_wpans = 0
+    n_wifs = 0
     connections = {}
     wlinks = []
 
@@ -52,7 +52,7 @@ class Mininet_mac802154(Mininet):
     @classmethod
     def init(self, node, **params):
         node.wpanports = -1
-        self.n_wpans = self.n_wpans + params['sixlowpan']
+        self.n_wifs = self.n_wifs + params['sixlowpan']
         self.addParameters(node, **params)
 
     @classmethod
@@ -63,45 +63,131 @@ class Mininet_mac802154(Mininet):
         params: parameters
         defaults: Default IP and MAC addresses
         node_mode: if interface is running in managed or master mode"""
-        node.params['wpan'] = []
+        node.params['wif'] = []
         node.wpanPhyID = []
 
-        wpans = self.count6LoWPANIfaces(**params)
+        wifs = self.count6LoWPANIfaces(**params)
 
-        for wpan in range(wpans):
+        for wif in range(wifs):
             self.addParamsToNode(node)
             if node_mode == 'managed':
                 self.appendAssociatedTo(node)
-                self.add_ip_param(node, wpans, **params)
+                self.add_ip_param(node, wifs, **params)
+            self.add_mac_param(node, wifs, **params)
 
-            node.params['wpan'].append(node.name + '-wpan' + str(wpan))
-            node.params.pop("wpans", None)
+            node.params['wif'].append(node.name + '-wpan' + str(wif))
+            node.params.pop("wifs", None)
+
+        # position
+        if 'position' in params:
+            pos = params['position']
+            if isinstance(pos, string_types):
+                pos = pos.split(',')
+            self.pos_to_array(node, pos)
+        else:
+            if 'position' in node.params:
+                pos = node.params['position']
+                self.pos_to_array(node, pos)
+
+        array_ = ['antennaGain', 'antennaHeight', 'txpower',
+                  'channel', 'mode', 'freq']
+        for param in array_:
+            node.params[param] = []
+            if param in params:
+                if isinstance(params[param], int):
+                    params[param] = str(params[param])
+                list = params[param].split(',')
+                for value in list:
+                    if param == 'mode' or param == 'channel':
+                        node.params[param].append(value)
+                    else:
+                        node.params[param].append(float(value))
+                len_ = len(node.params[param])
+                if len != params['wifs']:
+                    for _ in range(params['wifs'] - len_):
+                        node.params[param].append(value)
+            else:
+                params['wifs'] = 1
+                for _ in range(params['wifs']):
+                    if param == 'antennaGain':
+                        value = 5.0
+                    if param == 'antennaHeight':
+                        value = 1.0
+                    if param == 'txpower':
+                        value = 14
+                    if param == 'channel':
+                        value = 1
+                    if param == 'mode':
+                        value = 'g'
+                    if param == 'freq':
+                        value = 2.412
+                    node.params[param].append(value)
 
     @staticmethod
-    def add_ip_param(node, wpans, autoSetMacs=False, **params):
+    def add_mac_param(node, wifs, autoSetMacs=False, **params):
         "Add IP Param"
-        node.params['wpan_ip'] = []
-        if 'wpan_ip' in params:
-            ip_list = params['wpan_ip'].split(',')
+        node.params['mac'] = []
+        if 'mac' in params:
+            ip_list = params['mac'].split(',')
             for ip in ip_list:
-                node.params['wpan_ip'].append(ip)
-            if len(ip_list) != len(node.params['wpan']):
+                node.params['mac'].append(ip)
+            if len(ip_list) != len(node.params['wif']):
                 for ip_list in range(len(ip_list),
-                                     len(node.params['wpan'])):
-                    node.params['wpan_ip'].append('0/0')
+                                     len(node.params['wif'])):
+                    node.params['mac'].append('')
         elif autoSetMacs:
-            for n in range(wpans):
-                node.params['wpan_ip'].append('0/0')
-                node.params['wpan_ip'][n] = params['wpan_ip']
+            for n in range(wifs):
+                node.params['mac'].append('')
+                node.params['mac'][n] = params['mac']
         else:
-            for _ in range(wpans):
-                node.params['wpan_ip'].append('')
+            for _ in range(wifs):
+                node.params['mac'].append('')
+
+    @staticmethod
+    def add_ip_param(node, wifs, autoSetMacs=False, **params):
+        "Add IP Param"
+        node.params['wif_ip'] = []
+        if 'wif_ip' in params:
+            ip_list = params['wif_ip'].split(',')
+            for ip in ip_list:
+                node.params['wif_ip'].append(ip)
+            if len(ip_list) != len(node.params['wif']):
+                for ip_list in range(len(ip_list),
+                                     len(node.params['wif'])):
+                    node.params['wif_ip'].append('0/0')
+        elif autoSetMacs:
+            for n in range(wifs):
+                node.params['wif_ip'].append('0/0')
+                node.params['wif_ip'][n] = params['wif_ip']
+        else:
+            for _ in range(wifs):
+                node.params['wif_ip'].append('')
+
+    @staticmethod
+    def pos_to_array(node, pos):
+        if isinstance(pos, string_types):
+            pos = pos.split(',')
+        node.params['position'] = [float(pos[0]),
+                                   float(pos[1]),
+                                   float(pos[2])]
 
     @staticmethod
     def appendAssociatedTo(node):
         "Add associatedTo param"
         node.params['associatedTo'].append('')
 
+    @staticmethod
+    def configureMacAddr(node):
+        """Configure Mac Address
+
+        :param node: node"""
+        for wlan in range(0, len(node.params['wif'])):
+            iface = node.params['wif'][wlan]
+            if node.params['mac'][wlan] == '':
+                node.params['mac'][wlan] = node.getMAC(iface)
+            else:
+                mac = node.params['mac'][wlan]
+                node.setMAC(mac, iface)
 
     @classmethod
     def add6LoWPAN(self, name, cls=None, **params):
@@ -111,7 +197,7 @@ class Mininet_mac802154(Mininet):
            params: parameters for 6LoWPAN
            returns: added station"""
         # Default IP and MAC addresses
-        defaults = {'wpan_ip': ipAdd6(self.nextIP,
+        defaults = {'wif_ip': ipAdd6(self.nextIP,
                                 ipBaseNum=self.ipBaseNum,
                                 prefixLen=self.prefixLen) +
                           '/%s' % self.prefixLen
@@ -132,7 +218,7 @@ class Mininet_mac802154(Mininet):
             cls = self.mac802154
         node = cls(name, **defaults)
 
-        self.addParameters(node, defaults)
+        self.addParameters(node, defaults, **params)
 
         self.sixLP.append(node)
         self.nameToNode[name] = node
@@ -381,13 +467,13 @@ class Mininet_mac802154(Mininet):
     @classmethod
     def count6LoWPANIfaces(self, **params):
         "Count the number of virtual 6LoWPAN interfaces"
-        if 'wpans' in params:
-            self.n_wpans += int(params['wpans'])
-            wpans = int(params['wpans'])
+        if 'wifs' in params:
+            self.n_wifs += int(params['wifs'])
+            wifs = int(params['wifs'])
         else:
-            wpans = 1
-            self.n_wpans += 1
-        return wpans
+            wifs = 1
+            self.n_wifs += 1
+        return wifs
 
     def kill_fakelb(self):
         "Kill fakelb"
@@ -397,7 +483,7 @@ class Mininet_mac802154(Mininet):
     def configureIface(self, node, wlan):
         intf = module.wlan_list[0]
         module.wlan_list.pop(0)
-        node.renameIface(intf, node.params['wpan'][wlan])
+        node.renameIface(intf, node.params['wif'][wlan])
 
     def closeMininetWiFi(self):
         "Close Mininet-WiFi"

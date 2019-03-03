@@ -14,7 +14,7 @@ from mininet.log import debug, info, error
 class module(object):
     "wireless module"
 
-    wlan_list = []
+    wif_list = []
     hwsim_ids = []
     prefix = ""
     externally_managed = False
@@ -169,25 +169,25 @@ class module(object):
         except:
             pass
 
-        physicalWlans = cls.get_physical_wlan()  # Gets Physical Wlan(s)
+        physicalwifs = cls.get_physical_wif()  # Gets Physical wif(s)
         cls.load_module(n_radios, nodes, alt_module, **params)  # Initatilize WiFi Module
         phys = cls.get_phy()  # Get Phy Interfaces
-        module.assign_iface(nodes, physicalWlans, phys, **params)  # iface assign
+        module.assign_iface(nodes, physicalwifs, phys, **params)  # iface assign
 
     @classmethod
-    def get_physical_wlan(cls):
-        'Gets the list of physical wlans that already exist'
-        cls.wlans = []
+    def get_physical_wif(cls):
+        'Gets the list of physical wifs that already exist'
+        cls.wifs = []
         if py_version_info < (3, 0):
-            cls.wlans = (subprocess.check_output("iw dev 2>&1 | grep Interface "
+            cls.wifs = (subprocess.check_output("iw dev 2>&1 | grep Interface "
                                                  "| awk '{print $2}'",
                                                  shell=True)).split("\n")
         else:
-            cls.wlans = (subprocess.check_output("iw dev 2>&1 | grep Interface "
+            cls.wifs = (subprocess.check_output("iw dev 2>&1 | grep Interface "
                                                  "| awk '{print $2}'",
                                                  shell=True)).decode('utf-8').split("\n")
-        cls.wlans.pop()
-        return cls.wlans
+        cls.wifs.pop()
+        return cls.wifs
 
     @classmethod
     def get_phy(cls):
@@ -205,13 +205,13 @@ class module(object):
         return phy
 
     @classmethod
-    def load_ifb(cls, wlans):
+    def load_ifb(cls, wifs):
         """ Loads IFB
 
-        :param wlans: Number of wireless interfaces
+        :param wifs: Number of wireless interfaces
         """
-        debug('\nLoading IFB: modprobe ifb numifbs=%s' % wlans)
-        os.system('modprobe ifb numifbs=%s' % wlans)
+        debug('\nLoading IFB: modprobe ifb numifbs=%s' % wifs)
+        os.system('modprobe ifb numifbs=%s' % wifs)
 
     @classmethod
     def docker_config(cls, n_radios=0, nodes=None, dir='~/',
@@ -255,11 +255,11 @@ class module(object):
                   % (params['ssh_user'], ip, dir, file, dir, file))
 
     @classmethod
-    def assign_iface(cls, nodes, physicalWlans, phys, **params):
+    def assign_iface(cls, nodes, physicalwifs, phys, **params):
         """Assign virtual interfaces for all nodes
 
         :param nodes: list of wireless nodes
-        :param physicalWlans: list of Physical Wlans
+        :param physicalwifs: list of Physical wifs
         :param phys: list of phys
         :param **params: ifb -  Intermediate Functional Block device"""
         from mn_iot.wifi.node import Station, Car
@@ -274,11 +274,11 @@ class module(object):
         try:
             if 'docker' in params:
                 for phy in range(0, len(phys)):
-                    cls.wlan_list.append('wlan%s' % phy)
+                    cls.wif_list.append('wlan%s' % phy)
             else:
-                cls.wlan_list = cls.get_wlan_iface(physicalWlans)
+                cls.wif_list = cls.get_wif_iface(physicalwifs)
             if ifb:
-                cls.load_ifb(len(cls.wlan_list))
+                cls.load_ifb(len(cls.wif_list))
                 ifbID = 0
             debug("\n*** Configuring interfaces with appropriated network"
                   "-namespaces...\n")
@@ -287,8 +287,8 @@ class module(object):
                         or 'inNamespace' in node.params:
                     if ifb:
                         node.ifb = []
-                    for wlan in range(0, len(node.params['wlan'])):
-                        node.phyID[wlan] = cls.phyID
+                    for wif in range(0, len(node.params['wif'])):
+                        node.phyID[wif] = cls.phyID
                         cls.phyID += 1
                         if 'docker' not in params:
                             if py_version_info < (3, 0):
@@ -303,13 +303,13 @@ class module(object):
                             debug('rfkill unblock %s\n' % rfkill[0])
                             os.system('rfkill unblock %s' % rfkill[0])
                             os.system('iw phy %s set netns %s' % (phys[0], node.pid))
-                        node.cmd('ip link set %s down' % cls.wlan_list[0])
+                        node.cmd('ip link set %s down' % cls.wif_list[0])
                         node.cmd('ip link set %s name %s'
-                                 % (cls.wlan_list[0], node.params['wlan'][wlan]))
+                                 % (cls.wif_list[0], node.params['wif'][wif]))
                         if ifb:
-                            node.ifbSupport(wlan, ifbID)  # Adding Support to IFB
+                            node.ifbSupport(wif, ifbID)  # Adding Support to IFB
                             ifbID += 1
-                        cls.wlan_list.pop(0)
+                        cls.wif_list.pop(0)
                         phys.pop(0)
         except:
             logging.exception("Warning:")
@@ -327,11 +327,11 @@ class module(object):
                            )
 
     @classmethod
-    def get_wlan_iface(cls, physicalWlan):
-        """Build a new wlan list removing the physical wlan
+    def get_wif_iface(cls, physicalwif):
+        """Build a new wif list removing the physical wif
 
-        :param physicalWlans: list of Physical Wlans"""
-        wlan_list = []
+        :param physicalwifs: list of Physical wifs"""
+        wif_list = []
 
         if py_version_info < (3, 0):
             iface_list = subprocess.check_output("iw dev 2>&1 | grep Interface | "
@@ -343,8 +343,8 @@ class module(object):
                                                  "awk '{print $2}'",
                                                  shell=True).decode('utf-8').split('\n')
         for iface in iface_list:
-            if iface not in physicalWlan and iface != '':
-                wlan_list.append(iface)
-        wlan_list = sorted(wlan_list)
-        wlan_list.sort(key=len, reverse=False)
-        return wlan_list
+            if iface not in physicalwif and iface != '':
+                wif_list.append(iface)
+        wif_list = sorted(wif_list)
+        wif_list.sort(key=len, reverse=False)
+        return wif_list

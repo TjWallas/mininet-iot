@@ -104,19 +104,18 @@ class mobility(object):
         cls.move_factor(node, diff_time)
 
     @classmethod
-    def move_node(cls, node):
-        x = round(node.params['position'][0],2) + round(node.moveFac[0],2)
-        y = round(node.params['position'][1],2) + round(node.moveFac[1],2)
-        z = round(node.params['position'][2],2) + round(node.moveFac[2],2)
-        return x, y, z
-
-    @classmethod
     def set_wifi_params(cls):
         "Opens a thread for wifi parameters"
         if cls.allAutoAssociation:
             thread_ = thread(name='wifiParameters', target=cls.parameters)
             thread_.daemon = True
             thread_.start()
+
+    @classmethod
+    def set_pos(self, node, pos):
+        node.params['position'] = pos
+        if mobility.wmediumd_mode == 3 and mobility.thread_._keep_alive:
+            node.set_pos_wmediumd(pos)
 
     @classmethod
     def speed(cls, sta, pos_x, pos_y, pos_z, diff_time):
@@ -132,33 +131,33 @@ class mobility(object):
                                             diff_time)),2)
 
     @classmethod
-    def ap_out_of_range(cls, sta, ap, wlan):
+    def ap_out_of_range(cls, sta, ap, wif):
         """When ap is out of range
 
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID"""
-        if ap == sta.params['associatedTo'][wlan]:
+        :param wif: wif ID"""
+        if ap == sta.params['associatedTo'][wif]:
             if 'encrypt' in ap.params and 'ieee80211r' not in ap.params:
                 if 'wpa' in ap.params['encrypt'][0]:
-                    os.system('rm %s_%s.staconf' % (sta.name, wlan))
+                    os.system('rm %s_%s.staconf' % (sta.name, wif))
                     pidfile = "mn%d_%s_%s_wpa.pid" \
-                              % (os.getpid(), sta.name, wlan)
+                              % (os.getpid(), sta.name, wif)
                     os.system('pkill -f \'wpa_supplicant -B -Dnl80211 -P %s -i '
-                              '%s\'' % (pidfile, sta.params['wlan'][wlan]))
+                              '%s\'' % (pidfile, sta.params['wif'][wif]))
                     if os.path.exists(('/var/run/wpa_supplicant/%s'
-                                       % sta.params['wlan'][wlan])):
+                                       % sta.params['wif'][wif])):
                         os.system('rm /var/run/wpa_supplicant/%s'
-                                  % sta.params['wlan'][wlan])
+                                  % sta.params['wif'][wif])
             elif cls.wmediumd_mode and cls.wmediumd_mode != 3:
                 Association.setSNRWmediumd(sta, ap, snr=-10)
-                sta.params['rssi'][wlan] = 0
+                sta.params['rssi'][wif] = 0
             if 'encrypt' in ap.params and 'ieee80211r' not in ap.params or \
                             'encrypt' not in ap.params:
-                debug('iw dev %s disconnect\n' % sta.params['wlan'][wlan])
-                sta.pexec('iw dev %s disconnect' % sta.params['wlan'][wlan])
-            sta.params['associatedTo'][wlan] = ''
-            sta.params['channel'][wlan] = 0
+                debug('iw dev %s disconnect\n' % sta.params['wif'][wif])
+                sta.pexec('iw dev %s disconnect' % sta.params['wif'][wif])
+            sta.params['associatedTo'][wif] = ''
+            sta.params['channel'][wif] = 0
         if sta in ap.params['associatedStations']:
             ap.params['associatedStations'].remove(sta)
         if ap in sta.params['apsInRange']:
@@ -166,73 +165,77 @@ class mobility(object):
             ap.params['stationsInRange'].pop(sta, None)
 
     @classmethod
-    def ap_in_range(cls, sta, ap, wlan, dist):
+    def ap_in_range(cls, sta, ap, wif, dist):
         """When ap is in range
 
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID
+        :param wif: wif ID
         :param dist: distance between source and destination"""
         if ap not in sta.params['apsInRange']:
             sta.params['apsInRange'].append(ap)
-        rssi = sta.set_rssi(ap, wlan, dist)
+        rssi = sta.get_rssi(ap, wif, dist)
         ap.params['stationsInRange'][sta] = rssi
-        if ap == sta.params['associatedTo'][wlan]:
+        if ap == sta.params['associatedTo'][wif]:
             if cls.rec_rssi:
-                sta.params['rssi'][wlan] = rssi
+                sta.params['rssi'][wif] = rssi
                 debug('hwsim_mgmt -k %s %s >/dev/null 2>&1\n'
-                          % (sta.phyID[wlan],
-                             abs(int(sta.params['rssi'][wlan]))))
+                          % (sta.phyID[wif],
+                             abs(int(sta.params['rssi'][wif]))))
                 os.system('hwsim_mgmt -k %s %s >/dev/null 2>&1'
-                          % (sta.phyID[wlan],
-                             abs(int(sta.params['rssi'][wlan]))))
+                          % (sta.phyID[wif],
+                             abs(int(sta.params['rssi'][wif]))))
             if sta not in ap.params['associatedStations']:
                 ap.params['associatedStations'].append(sta)
             if dist >= 0.01:
                 if Association.bgscan or 'active_scan' in sta.params \
-                and ('encrypt' in sta.params and 'wpa' in sta.params['encrypt'][wlan]):
+                and ('encrypt' in sta.params and 'wpa' in sta.params['encrypt'][wif]):
                     pass
                 elif cls.wmediumd_mode and cls.wmediumd_mode != 3:
-                    sta.params['rssi'][wlan] = rssi
+                    sta.params['rssi'][wif] = rssi
                     Association.setSNRWmediumd(
-                        sta, ap, snr=sta.params['rssi'][wlan] - (-91))
+                        sta, ap, snr=sta.params['rssi'][wif] - (-91))
                 elif cls.wmediumd_mode == 3:
                     pass
                 else:
-                    sta.params['rssi'][wlan] = rssi
-                    wirelessLink(sta, ap, dist, wlan=wlan, ap_wlan=0)
+                    sta.params['rssi'][wif] = rssi
+                    wirelessLink(sta, ap, dist, wif=wif, ap_wif=0)
 
     @classmethod
-    def check_association(cls, sta, wlan, ap_wlan):
+    def check_association(cls, sta, wif, ap_wif):
         """check association
 
         :param sta: station
-        :param wlan: wlan ID"""
+        :param wif: wif ID"""
+        aps = []
         for ap in cls.aps:
             dist = sta.get_distance_to(ap)
             if dist > ap.params['range'][0]:
-                cls.ap_out_of_range(sta, ap, wlan)
+                cls.ap_out_of_range(sta, ap, wif)
             else:
-                cls.handover(sta, ap, wlan, ap_wlan)
-                cls.ap_in_range(sta, ap, wlan, dist)
+                aps.append(ap)
+        for ap in aps:
+            dist = sta.get_distance_to(ap)
+            cls.handover(sta, ap, wif, ap_wif)
+            cls.ap_in_range(sta, ap, wif, dist)
 
     @classmethod
-    def handover(cls, sta, ap, wlan, ap_wlan):
+    def handover(cls, sta, ap, wif, ap_wif):
         """handover
 
         :param sta: station
         :param ap: access point
-        :param wlan: wlan ID"""
+        :param wif: wif ID"""
         changeAP = False
 
         "Association Control: mechanisms that optimize the use of the APs"
-        if cls.ac and sta.params['associatedTo'][wlan] \
+        if cls.ac and sta.params['associatedTo'][wif] \
                 and ap not in sta.params['associatedTo']:
-            value = associationControl(sta, ap, wlan, cls.ac)
+            value = associationControl(sta, ap, wif, cls.ac)
             changeAP = value.changeAP
-        if not sta.params['associatedTo'][wlan] or changeAP:
+        if not sta.params['associatedTo'][wif] or changeAP:
             if ap not in sta.params['associatedTo']:
-                Association.associate_infra(sta, ap, wlan=wlan, ap_wlan=ap_wlan)
+                Association.associate_infra(sta, ap, wif=wif, ap_wif=ap_wif)
 
     @classmethod
     def models(cls, **kwargs):
@@ -316,45 +319,28 @@ class mobility(object):
             while (time() - current_time) < kwargs['time']:
                 pass
 
-            if kwargs['DRAW']:
-                cls.modelGraph(mob, kwargs['nodes'])
-            else:
-                cls.modelNoGraph(mob, kwargs['nodes'])
+            cls.start_mob_mod(mob, kwargs['nodes'], kwargs['DRAW'])
 
-    @classmethod
-    def modelGraph(cls, mob, nodes):
-        """Useful for plotting graphs
-
-        :param mob: mobility params
-        :param nodes: list of nodes"""
-        for xy in mob:
-            for idx, node in enumerate(nodes):
-                node.params['position'] = round(xy[idx][0],2), \
-                                          round(xy[idx][1],2), \
-                                          0.0
-                if cls.wmediumd_mode == 3 and mobility.thread_._keep_alive:
-                    node.set_pos_wmediumd()
-                plot2d.update(node)
-            plot2d.pause()
-            while cls.pause_simulation:
-                pass
-
-    @classmethod
-    def modelNoGraph(cls, mob, nodes):
-        """Useful when graph is not required
-
-        :param mob: mobility params
-        :param nodes: list of nodes"""
-        for xy in mob:
-            for idx, node in enumerate(nodes):
-                node.params['position'] = round(xy[idx][0],2), \
-                                          round(xy[idx][1],2), \
-                                          0.0
-                if cls.wmediumd_mode == 3 and mobility.thread_._keep_alive:
-                    node.set_pos_wmediumd()
-            sleep(0.5)
-            while cls.pause_simulation:
-                pass
+        @classmethod
+        def start_mob_mod(cls, mob, nodes, graph):
+            """
+            :param mob: mobility params
+            :param nodes: list of nodes
+            """
+            for xy in mob:
+                for idx, node in enumerate(nodes):
+                    pos = round(xy[idx][0], 2), \
+                          round(xy[idx][1], 2), \
+                          0.0
+                    cls.set_pos(node, pos)
+                    if graph:
+                        plot2d.update(node)
+                if graph:
+                    plot2d.pause()
+                else:
+                    sleep(0.5)
+                while cls.pause_simulation:
+                    pass
 
     @classmethod
     def configLinks(cls, node=None):
@@ -379,24 +365,24 @@ class mobility(object):
     @classmethod
     def configureLinks(cls, nodes):
         for node in nodes:
-            for wlan in range(0, len(node.params['wlan'])):
-                if node.func[wlan] == 'mesh' or node.func[wlan] == 'adhoc':
+            for wif in range(0, len(node.params['wif'])):
+                if node.func[wif] == 'mesh' or node.func[wif] == 'adhoc':
                     pass
                 else:
                     if cls.wmediumd_mode == 3:
                         if Association.bgscan or ('active_scan' in node.params \
-                        and ('encrypt' in node.params and 'wpa' in node.params['encrypt'][wlan])):
+                        and ('encrypt' in node.params and 'wpa' in node.params['encrypt'][wif])):
                             for ap in cls.aps:
-                                if node.params['associatedTo'][wlan] == '':
-                                    Association.associate_infra(node, ap, wlan=wlan,
-                                                                ap_wlan=0)
-                                    node.params['associatedTo'][wlan] = 'active_scan'
+                                if node.params['associatedTo'][wif] == '':
+                                    Association.associate_infra(node, ap, wif=wif,
+                                                                ap_wif=0)
+                                    node.params['associatedTo'][wif] = 'active_scan'
                                     if Association.bgscan:
-                                        node.params['associatedTo'][wlan] = 'bgscan'
+                                        node.params['associatedTo'][wif] = 'bgscan'
                         else:
-                            cls.check_association(node, wlan, ap_wlan=0)
+                            cls.check_association(node, wif, ap_wif=0)
                     else:
-                        cls.check_association(node, wlan, ap_wlan=0)
+                        cls.check_association(node, wif, ap_wif=0)
         sleep(0.0001)
 
 
@@ -474,21 +460,31 @@ class tracked(thread):
                             if (t2 - t1) >= node.startTime and node.time <= node.endTime:
                                 if hasattr(node, 'coord'):
                                     mobility.calculate_diff_time(node)
-                                    node.params['position'] = node.points[node.time * node.moveFac]
+                                    self.set_pos(node,
+                                                 node.points[node.time * node.moveFac])
                                     if node.time == node.endTime:
-                                        node.params['position'] = node.points[len(node.points) - 1]
+                                        self.set_pos(node,
+                                                     node.points[len(node.points) - 1])
                                 else:
-                                    x, y, z = mobility.move_node(node)
-                                    node.params['position'] = (x, y, z)
+                                    self.set_pos(node, self.move_node(node))
                                 node.time += 1
-                            if mobility.wmediumd_mode and mobility.wmediumd_mode == 3:
-                                node.set_pos_wmediumd()
                             if kwargs['DRAW']:
                                 plot.update(node)
                                 if kwargs['max_z'] == 0:
                                     plot2d.updateCircleRadius(node)
                         plot.pause()
                         i += 1
+
+    def set_pos(self, node, pos):
+        node.params['position'] = [float(x) for x in pos.split(',')]
+        if mobility.wmediumd_mode == 3 and mobility.thread_._keep_alive:
+            node.set_pos_wmediumd(pos)
+
+    def move_node(cls, node):
+        x = round(node.params['position'][0], 2) + round(node.moveFac[0], 2)
+        y = round(node.params['position'][1], 2) + round(node.moveFac[1], 2)
+        z = round(node.params['position'][2], 2) + round(node.moveFac[2], 2)
+        return '%s,%s,%s' % (x, y, z)
 
     def create_coordinate(cls, node):
         node.coord_ = []
