@@ -28,7 +28,7 @@ def topology():
     info("*** Creating nodes\n")
     cars = []
     for id in range(0, 10):
-        cars.append(net.addCar('car%s' % (id+1), wlans=2))
+        cars.append(net.addCar('car%s' % (id+1), wifs=2))
 
     e1 = net.addAccessPoint('e1', ssid='vanet-ssid', mac='00:00:00:11:00:01',
                             mode='g', channel='1', passwd='123456789a',
@@ -65,7 +65,7 @@ def topology():
     net.addLink(e4, e5)
     net.addLink(e5, e6)
     for car in cars:
-        net.addLink(car, intf=car.params['wlan'][1],
+        net.addLink(car, intf=car.params['wif'][1],
                     cls=mesh, ssid='mesh-ssid', channel=5)
 
     net.useExternalProgram(program=sumo, port=8813,

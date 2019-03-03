@@ -50,11 +50,11 @@ def topology():
 
     net.plotGraph(max_x=100, max_y=100)
 
-    sta1.setRange(15, intf=sta1.params['wlan'][0])
-    sta2.setRange(15, intf=sta2.params['wlan'][0])
-    sta3.setRange(15, intf=sta3.params['wlan'][0])
-    sta4.setRange(15, intf=sta4.params['wlan'][0])
-    sta5.setRange(15, intf=sta5.params['wlan'][0])
+    sta1.setRange(15, intf=sta1.params['wif'][0])
+    sta2.setRange(15, intf=sta2.params['wif'][0])
+    sta3.setRange(15, intf=sta3.params['wif'][0])
+    sta4.setRange(15, intf=sta4.params['wif'][0])
+    sta5.setRange(15, intf=sta5.params['wif'][0])
 
     info("*** Starting network\n")
     net.build()
@@ -63,19 +63,19 @@ def topology():
 
     sleep(2)
     sta1.cmd('iw dev %s connect %s %s'
-             % (sta1.params['wlan'][0], ap1.params['ssid'][1],
+             % (sta1.params['wif'][0], ap1.params['ssid'][1],
                 ap1.params['mac'][1]))
     sta2.cmd('iw dev %s connect %s %s'
-             % (sta2.params['wlan'][0], ap1.params['ssid'][2],
+             % (sta2.params['wif'][0], ap1.params['ssid'][2],
                 ap1.params['mac'][2]))
     sta3.cmd('iw dev %s connect %s %s'
-             % (sta3.params['wlan'][0], ap1.params['ssid'][2],
+             % (sta3.params['wif'][0], ap1.params['ssid'][2],
                 ap1.params['mac'][2]))
     sta4.cmd('iw dev %s connect %s %s'
-             % (sta4.params['wlan'][0], ap1.params['ssid'][3],
+             % (sta4.params['wif'][0], ap1.params['ssid'][3],
                 ap1.params['mac'][3]))
     sta5.cmd('iw dev %s connect %s %s'
-             % (sta5.params['wlan'][0], ap1.params['ssid'][4],
+             % (sta5.params['wif'][0], ap1.params['ssid'][4],
                 ap1.params['mac'][4]))
 
     ap1.cmd('dpctl unix:/tmp/ap1 meter-mod cmd=add,flags=1,meter=1 '

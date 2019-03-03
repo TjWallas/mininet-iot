@@ -266,7 +266,7 @@ class replayingRSSI(object):
 
     @classmethod
     def calculateRate(cls, sta, ap, dist):
-        value = GetRate(sta=sta, ap=ap, wlan=0)
+        value = GetRate(sta=sta, ap=ap, wif=0)
         custombw = value.rate
         rate = value.rate / 2.5
 
@@ -287,13 +287,13 @@ class replayingRSSI(object):
             return dist
 
     @classmethod
-    def pathLoss(cls, sta, ap, dist, wlan=0):
+    def pathLoss(cls, sta, ap, dist, wif=0):
         """Path Loss Model:
         (f) signal frequency transmited(Hz)
         (d) is the distance between the transmitter and the receiver (m)
         (c) speed of light in vacuum (m)
         (L) System loss"""
-        f = sta.params['freq'][wlan] * 10 ** 9  # Convert Ghz to Hz
+        f = sta.params['freq'][wif] * 10 ** 9  # Convert Ghz to Hz
         c = 299792458.0
         L = 1
         if dist == 0:

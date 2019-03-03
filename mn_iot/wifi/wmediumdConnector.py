@@ -630,7 +630,7 @@ class DynamicWmediumdIntfRef(WmediumdIntfRef):
         index = 0
         found = False
         for wif_intf in self.__sta.params['wif']:
-            if wlan_intf == intf_name:
+            if wif_intf == intf_name:
                 found = True
                 break
             index += 1
