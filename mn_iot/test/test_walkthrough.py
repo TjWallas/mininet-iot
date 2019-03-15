@@ -500,7 +500,7 @@ class testWalkthrough(unittest.TestCase):
             'python examples/mesh.py')
         sleep(8)
         p.sendline('sta1 ping -c1 sta2')
-        p.expect('1 packets transmitted, 1 received')
+        p.expect('1 packets transmitted')
         p.expect(self.prompt)
         p.sendline('pingall')
         p.expect('0% dropped')

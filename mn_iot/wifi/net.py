@@ -182,13 +182,13 @@ class Mininet_wifi(Mininet):
            returns: True if all switches are connected"""
         info('*** Waiting for switches/aps to connect\n')
         time = 0
-        L2nodes = self.switches + self.aps
-        remaining = list(L2nodes)
+        nodes = self.switches + self.aps
+        remaining = list(nodes)
         while True:
-            for switch in tuple(remaining):
-                if switch.connected():
-                    info('%s ' % switch)
-                    remaining.remove(switch)
+            for l2 in tuple(remaining):
+                if l2.connected():
+                    info('%s ' % l2)
+                    remaining.remove(l2)
             if not remaining:
                 info('\n')
                 return True
@@ -197,12 +197,12 @@ class Mininet_wifi(Mininet):
             sleep(delay)
             time += delay
         warn('Timed out after %d seconds\n' % time)
-        for switch in remaining:
-            if not switch.connected():
+        for l2 in remaining:
+            if not l2.connected():
                 warn('Warning: %s is not connected to a controller\n'
-                     % switch.name)
+                     % l2.name)
             else:
-                remaining.remove(switch)
+                remaining.remove(l2)
         return not remaining
 
     def delNode(self, node, nodes=None):
@@ -754,8 +754,7 @@ class Mininet_wifi(Mininet):
                             int(node.params['range'][wif]) / 5
 
         if self.allAutoAssociation:
-            if self.autoAssociation and not self.mob_param \
-                    and not self.configureWiFiDirect:
+            if self.autoAssociation and not self.configureWiFiDirect:
                 self.auto_association()
         if self.mob_param:
             if 'model' in self.mob_param or self.isVanet or self.nroads != 0:
@@ -1360,6 +1359,7 @@ class Mininet_wifi(Mininet):
         params: parameters
         defaults: Default IP and MAC addresses
         node_mode: if interface is running in managed or master mode"""
+        params['wifs'] = self.countWiFiIfaces(**params)
         node.params['wif'] = []
         node.params['mac'] = []
         node.phyID = []
@@ -1368,8 +1368,11 @@ class Mininet_wifi(Mininet):
                   'encrypt', 'radius_server', 'bw']
         for param in params:
             if param in array_:
-                node.params[param] = []
                 list = params[param].split(',')
+                if len(list) != params['wifs']:
+                    error('*** Error: len(%s) != wlans\n' % param)
+                    exit()
+                node.params[param] = []
                 for value in list:
                     node.params[param].append(value)
 
@@ -1397,8 +1400,6 @@ class Mininet_wifi(Mininet):
             if 'position' in node.params:
                 pos = node.params['position']
                 self.pos_to_array(node, pos)
-
-        params['wifs'] = self.countWiFiIfaces(**params)
 
         for wif in range(params['wifs']):
             node.func.append('none')
@@ -1835,7 +1836,13 @@ class Mininet_wifi(Mininet):
             if sta in mob.stations:
                 mob.stations.remove(sta)
 
-        nodes = self.aps + self.stations + self.cars
+        if self.mob_param:
+            nodes = []
+            for node in self.stations:
+                if 'position' in node.params:
+                    nodes.append(node)
+        else:
+            nodes = self.aps + self.stations + self.cars
 
         if self.nroads == 0:
             for node in nodes:

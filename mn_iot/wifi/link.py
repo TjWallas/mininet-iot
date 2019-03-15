@@ -1228,6 +1228,8 @@ class physicalMesh(IntfWireless):
         self: custom association class/constructor
         params: parameters for node"""
         wif = node.ifaceToAssociate
+        self.name = ''
+        self.node = node
 
         if not isAP:
             node.params['ssid'] = []
@@ -1244,7 +1246,7 @@ class physicalMesh(IntfWireless):
             node.params['range'][wif] = node.getRange(intf=intf, noiseLevel=95)
 
         params['phyap'] = True
-        mesh.setMeshIface(node, node.params['wif'][wif], **params)
+        self.name = node.params['wlan'][wif]
         self.setPhysicalMeshIface(node, **params)
         ssid = node.params['ssid'][wif]
         freq = node.params['freq'][wif]
