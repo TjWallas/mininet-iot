@@ -273,10 +273,7 @@ class Mininet_wifi(Mininet):
         defaults = {'ip': ipAdd(self.nextIP,
                                 ipBaseNum=self.ipBaseNum,
                                 prefixLen=self.prefixLen) +
-                          '/%s' % self.prefixLen,
-                    'channel': self.channel,
-                    'mode': self.mode,
-                    'ssid': self.ssid
+                          '/%s' % self.prefixLen
                     }
 
         if self.autoSetMacs:
@@ -318,7 +315,7 @@ class Mininet_wifi(Mininet):
             self.nextPos_ap += 100
 
         wif = None
-        if cls == physicalAP:
+        if cls and cls.__name__ == 'physicalAP':
             wif = ("%s" % params.pop('phywif', {}))
             cls = self.accessPoint
         if not cls:
@@ -364,9 +361,10 @@ class Mininet_wifi(Mininet):
             self.addLink(nat, connect)
             # Set the default route on stations
             natIP = nat.params['ip'].split('/')[0]
-            for station in self.stations:
-                if station.inNamespace:
-                    station.setDefaultRoute('via %s' % natIP)
+            nodes = self.stations + self.hosts + self.cars
+            for node in nodes:
+                if node.inNamespace:
+                    node.setDefaultRoute('via %s' % natIP)
         return nat
 
     # BL: We now have four ways to look up nodes
@@ -1853,7 +1851,7 @@ class Mininet_wifi(Mininet):
                             pos[0] = float(pos[0]) + 1
                             if node.func[wif] == 'adhoc':
                                 sleep(1.5)
-                            if self.link == wmediumd:
+                            if self.wmediumd_mode == interference:
                                 node.set_pos_wmediumd(pos)
 
             mob.aps = self.aps

@@ -41,7 +41,7 @@ from mininet.node import Node
 from mininet.moduledeps import moduleDeps, pathCheck, TUN
 from mininet.link import Link, Intf, OVSIntf
 from mn_iot.wifi.link import TCWirelessLink, TCLinkWirelessAP,\
-    Association, wirelessLink, adhoc, mesh
+    Association, wirelessLink, adhoc, mesh, physicalMesh
 from mn_iot.wifi.wmediumdConnector import w_server, w_pos, w_txpower, \
     w_gain, w_height, w_cst, wmediumd_mode
 from mn_iot.wifi.propagationModels import GetSignalRange, \
@@ -162,11 +162,25 @@ class Node_wifi(Node):
         self.params['range'] = [0]
         self.plotted = True
 
-    def setMeshIface(self, iface, ssid='', **params):
-        mesh.setMeshIface(self, iface, ssid, **params)
+    def setMeshMode(self, intf=None, **kwargs):
+        if intf:
+            kwargs['intf'] = intf
+        wif = self.params['wif'].index(kwargs['intf'])
+        mesh(self, **kwargs)
 
-    def setPhysicalMeshIface(self, **params):
-        mesh.setPhysicalMeshIface(self, **params)
+    def setPhysicalMeshMode(self, intf=None, **kwargs):
+        if intf:
+            kwargs['intf'] = intf
+        wif = self.params['wif'].index(kwargs['intf'])
+        physicalMesh(self, **kwargs)
+
+    def setAdhocMode(self, intf=None, **kwargs):
+        if intf:
+            kwargs['intf'] = intf
+        wif = self.params['wif'].index(kwargs['intf'])
+        if self.func[wif] == 'adhoc':
+            self.cmd('iw dev %s ibss leave' % self.params['wif'][wif])
+        adhoc(self, **kwargs)
 
     def setMasterMode(self, intf=None, ssid='-ssid1',
                       **kwargs):
@@ -201,22 +215,6 @@ class Node_wifi(Node):
             link = 'wmediumd'
         AccessPoint.setConfig(self, aplist=None, wif=wif,
                               link=link, ssid=ssid)
-
-    def setAdhocIface(self, iface, ssid=''):
-        "Set Adhoc Interface"
-        wif = self.params['wif'].index(iface)
-        if self.func[wif] == 'mesh':
-            self.cmd('iw dev %s del' % self.params['wif'][wif])
-            iface = '%s-wlan%s' % (self, wif)
-            self.params['wif'][wif] = iface
-        else:
-            iface = self.params['wif'][wif]
-        if ssid != '':
-            if 'ssid' not in self.params:
-                self.params['ssid'] = []
-                self.params['ssid'].append(0)
-            self.params['ssid'][wif] = ssid
-            adhoc.configureAdhoc(self, wif, enable_wmediumd=True)
 
     def setOCBIface(self, wif):
         "Set OCB Interface"
@@ -302,6 +300,7 @@ class Node_wifi(Node):
             cls = plot3d
         if cls.fig_exists():
             cls.updateCircleRadius(self)
+            cls.updateLine(self)
             cls.update(self)
             cls.pause()
 
@@ -330,19 +329,22 @@ class Node_wifi(Node):
         self.setHeightWmediumd(wif)
         self.configLinks()
 
-    def setChannel(self, value, intf=None):
+    def setChannel(self, channel, intf=None):
         "Set Channel"
-        wif = self.params['wif'].index(intf)
-        self.params['channel'][wif] = str(value)
-        self.params['freq'][wif] = self.get_freq(wif)
-        if isinstance(self, AP) and self.func[wif] != 'mesh':
-            self.pexec(
-                'hostapd_cli -i %s chan_switch %s %s' % (
-                    intf, str(value),
-                    str(self.params['freq'][wif]).replace(".", "")))
+        from mn_wifi.link import IntfWireless
+        wif = 0
+        if intf:
+            wif = self.params['wif'].index(intf)
         else:
-            self.cmd('iw dev %s set channel %s'
-                     % (self.params['wif'][wif], str(value)))
+            intf = self.params['wif'][wif]
+        if isinstance(self, AP) and self.func[wif] != 'mesh':
+            IntfWireless.setChannel(self, channel, intf, AP=True)
+        else:
+            if self.func[wif] == 'mesh':
+                mesh(self, channel=channel, intf=intf)
+            elif self.func[wif] == 'adhoc':
+                self.cmd('iw dev %s ibss leave' % self.params['wif'][wif])
+                adhoc(self, channel=channel, intf=intf)
 
     def setTxPower(self, value, intf=None, setParam=True):
         "Set Tx Power"
@@ -510,10 +512,10 @@ class Node_wifi(Node):
 
     def associateTo(self, ap, intf=None):
         "Force association to given AP"
-        self.moveAssociationTo(ap, intf)
+        self.setAssociation(ap, intf)
 
-    def moveAssociationTo(self, ap, intf=None):
-        "Force association to specific AP"
+    def setAssociation(self, ap, intf=None):
+        "Force association to given AP"
         sta = self
         wif = sta.params['wif'].index(intf)
 
@@ -1358,9 +1360,9 @@ class AccessPoint(AP):
 
     writeMacAddress = False
 
-    def __init__(cls, aps, driver, link):
+    def __init__(self, aps, driver, link):
         'configure ap'
-        cls.configure(aps, driver, link)
+        cls.configure(self, driver, link)
 
     @classmethod
     def configure(cls, aps, driver, link):
@@ -1402,7 +1404,7 @@ class AccessPoint(AP):
                 module.phyID += 1
 
     @classmethod
-    def setConfig(cls, ap, aplist=None, wif=None, link=None, ssid=None):
+    def setConfig(cls, ap, aplist=None, wif=0, link=None, ssid=None):
         """Configure AP
         :param ap: ap node
         :param aplist: list of aps
@@ -1418,7 +1420,7 @@ class AccessPoint(AP):
                     else:
                         ap.wpa_key_mgmt = 'WPA-EAP'
                     ap.rsn_pairwise = 'TKIP CCMP'
-                    ap.wpa_passphrase = ap.params['passwd'][0]
+                    ap.wpa_passphrase = ap.params['passwd'][wif]
                 elif ap.params['encrypt'][wif] == 'wpa2' \
                         or ap.params['encrypt'][wif] == 'wpa3':
                     ap.auth_algs = 1
@@ -1427,18 +1429,21 @@ class AccessPoint(AP):
                             and 'authmode' not in ap.params:
                         ap.wpa_key_mgmt = 'FT-PSK'
                     elif 'authmode' in ap.params \
-                            and ap.params['authmode'][0] == '8021x':
+                            and ap.params['authmode'][wif] == '8021x':
                         ap.wpa_key_mgmt = 'WPA-EAP'
                     else:
                         ap.wpa_key_mgmt = 'WPA-PSK'
                     ap.rsn_pairwise = 'CCMP'
                     if 'authmode' not in ap.params:
-                        ap.wpa_passphrase = ap.params['passwd'][0]
+                        ap.wpa_passphrase = ap.params['passwd'][wif]
                 elif ap.params['encrypt'][wif] == 'wep':
                     ap.auth_algs = 2
-                    ap.wep_key0 = ap.params['passwd'][0]
+                    ap.wep_key0 = ap.params['passwd'][wif]
 
-            cls.setHostapdConfig(ap, wif, aplist, link)
+            if ap.params['mode'][wif] == 'adhoc':
+                ap.func[wif] = 'adhoc'
+            else:
+                cls.setHostapdConfig(ap, wif, aplist, link)
 
     @classmethod
     def setHostapdConfig(cls, ap, wif, aplist=None, link=None):

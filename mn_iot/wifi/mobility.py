@@ -131,7 +131,7 @@ class mobility(object):
                                             diff_time)),2)
 
     @classmethod
-    def ap_out_of_range(cls, sta, ap, wif):
+    def ap_out_of_range(cls, sta, ap, wif, ap_wif):
         """When ap is out of range
 
         :param sta: station
@@ -139,7 +139,7 @@ class mobility(object):
         :param wif: wif ID"""
         if ap == sta.params['associatedTo'][wif]:
             if 'encrypt' in ap.params and 'ieee80211r' not in ap.params:
-                if 'wpa' in ap.params['encrypt'][0]:
+                if 'wpa' in ap.params['encrypt'][ap_wif]:
                     os.system('rm %s_%s.staconf' % (sta.name, wif))
                     pidfile = "mn%d_%s_%s_wpa.pid" \
                               % (os.getpid(), sta.name, wif)
@@ -211,7 +211,7 @@ class mobility(object):
         for ap in cls.aps:
             dist = sta.get_distance_to(ap)
             if dist > ap.params['range'][0]:
-                cls.ap_out_of_range(sta, ap, wif)
+                cls.ap_out_of_range(sta, ap, wif, ap_wif)
             else:
                 aps.append(ap)
         for ap in aps:
@@ -365,24 +365,26 @@ class mobility(object):
     @classmethod
     def configureLinks(cls, nodes):
         for node in nodes:
-            for wif in range(0, len(node.params['wif'])):
+            for wif in range(len(node.params['wif'])):
                 if node.func[wif] == 'mesh' or node.func[wif] == 'adhoc':
                     pass
-                else:
-                    if cls.wmediumd_mode == 3:
-                        if Association.bgscan or ('active_scan' in node.params \
-                        and ('encrypt' in node.params and 'wpa' in node.params['encrypt'][wif])):
-                            for ap in cls.aps:
-                                if node.params['associatedTo'][wif] == '':
-                                    Association.associate_infra(node, ap, wif=wif,
-                                                                ap_wif=0)
-                                    node.params['associatedTo'][wif] = 'active_scan'
-                                    if Association.bgscan:
-                                        node.params['associatedTo'][wif] = 'bgscan'
-                        else:
-                            cls.check_association(node, wif, ap_wif=0)
-                    else:
-                        cls.check_association(node, wif, ap_wif=0)
+                    for ap in cls.aps:
+                        for ap_wif in range(len(ap.params['wif'])):
+                            if ap.func[ap_wif] != 'mesh' and ap.func[ap_wif] != 'adhoc':
+                                if cls.wmediumd_mode == 3:
+                                    if Association.bgscan or ('active_scan' in node.params \
+                                    and ('encrypt' in node.params and 'wpa' in node.params['encrypt'][wif])):
+                                        if node.params['associatedTo'][wif] == '':
+                                            Association.associate_infra(node, ap, wif=wif,
+                                                                        ap_wif=ap_wif)
+                                            if Association.bgscan:
+                                                node.params['associatedTo'][wif] = 'bgscan'
+                                            else:
+                                                node.params['associatedTo'][wif] = 'active_scan'
+                                    else:
+                                        cls.check_association(node, wif, ap_wif=ap_wif)
+                                else:
+                                    cls.check_association(node, wif, ap_wif=ap_wif)
         sleep(0.0001)
 
 
@@ -440,7 +442,7 @@ class tracked(thread):
         from time import time
         nodes = kwargs['nodes']
 
-        for rep in range(0, kwargs['repetitions']):
+        for rep in range(kwargs['repetitions']):
             t1 = time()
             i = 1
             if rep > 0:
@@ -476,7 +478,7 @@ class tracked(thread):
                         i += 1
 
     def set_pos(self, node, pos):
-        node.params['position'] = [float(x) for x in pos.split(',')]
+        node.params['position'] = pos
         if mobility.wmediumd_mode == 3 and mobility.thread_._keep_alive:
             node.set_pos_wmediumd(pos)
 
@@ -484,7 +486,7 @@ class tracked(thread):
         x = round(node.params['position'][0], 2) + round(node.moveFac[0], 2)
         y = round(node.params['position'][1], 2) + round(node.moveFac[1], 2)
         z = round(node.params['position'][2], 2) + round(node.moveFac[2], 2)
-        return '%s,%s,%s' % (x, y, z)
+        return [x, y, z]
 
     def create_coordinate(cls, node):
         node.coord_ = []
@@ -495,7 +497,7 @@ class tracked(thread):
             coord2 = '%s,%s,%s' % (fin_pos[0], fin_pos[1], fin_pos[2])
             node.coord_.append([coord1, coord2])
         else:
-            for idx in range(0, len(node.coord) - 1):
+            for idx in range(len(node.coord) - 1):
                 node.coord_.append([node.coord[idx], node.coord[idx + 1]])
 
     def get_line(self, node, x1, y1, z1, x2, y2, z2):
@@ -714,7 +716,7 @@ class RandomWaypoint(object):
         MIN_X = U(0, 0, NODES)
         MIN_Y = U(0, 0, NODES)
 
-        for node in range(0, self.nr_nodes):
+        for node in range(self.nr_nodes):
             MAX_V[node] = self.nodes[node].max_v/10
             MIN_V[node] = self.nodes[node].min_v/10
             MAX_X[node] = self.nodes[node].max_x
@@ -884,7 +886,7 @@ class StochasticWalk(object):
         MIN_X = U(0, 0, NODES)
         MIN_Y = U(0, 0, NODES)
 
-        for node in range(0, len(self.nodes)):
+        for node in range(len(self.nodes)):
             MAX_X[node] = self.nodes[node].max_x
             MAX_Y[node] = self.nodes[node].max_y
             MIN_X[node] = self.nodes[node].min_x
@@ -976,7 +978,7 @@ class RandomWalk(StochasticWalk):
         velocity = VELOCITY
         distance = VELOCITY
 
-        for node in range(0, len(nodes)):
+        for node in range(len(nodes)):
             velocity[node] = nodes[node].constantVelocity
             distance[node] = nodes[node].constantDistance
 
@@ -1039,7 +1041,7 @@ class RandomDirection(StochasticWalk):
         MAX_V = max_v
         MIN_V = min_v
 
-        for node in range(0, len(nodes)):
+        for node in range(len(nodes)):
             MAX_V[node] = nodes[node].max_v/10
             MIN_V[node] = nodes[node].min_v/10
 
@@ -1228,7 +1230,7 @@ def gauss_markov(nodes, velocity_mean=1., alpha=1., variance=1.):
     MIN_X = U(0, 0, NODES)
     MIN_Y = U(0, 0, NODES)
 
-    for node in range(0, len(nodes)):
+    for node in range(len(nodes)):
         MAX_X[node] = nodes[node].max_x
         MAX_Y[node] = nodes[node].max_y
         MIN_X[node] = nodes[node].min_x
