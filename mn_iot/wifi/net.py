@@ -27,7 +27,7 @@ from mininet.nodelib import NAT
 from mininet.log import info, error, debug, output, warn
 
 from mn_iot.wifi.node import AccessPoint, AP, Station, Car, \
-    OVSKernelAP, physicalAP
+    OVSKernelAP
 from mn_iot.wifi.wmediumdConnector import w_starter, w_server, \
     error_prob, snr, interference
 from mn_iot.wifi.link import wirelessLink, wmediumd, Association, \

@@ -368,6 +368,7 @@ class mobility(object):
             for wif in range(len(node.params['wif'])):
                 if node.func[wif] == 'mesh' or node.func[wif] == 'adhoc':
                     pass
+                else:
                     for ap in cls.aps:
                         for ap_wif in range(len(ap.params['wif'])):
                             if ap.func[ap_wif] != 'mesh' and ap.func[ap_wif] != 'adhoc':
@@ -440,7 +441,6 @@ class tracked(thread):
 
     def run(self, plot, **kwargs):
         from time import time
-        nodes = kwargs['nodes']
 
         for rep in range(kwargs['repetitions']):
             mobility.thread_._keep_alive = True
