@@ -98,7 +98,7 @@ class IntfWireless(object):
                     str(node.params['freq'][wif]).replace(".", "")))
         else:
             node.cmd('iw dev %s set channel %s'
-                     % (node.params['wlan'][wif], str(channel)))
+                     % (node.params['wif'][wif], str(channel)))
 
     def ipAddr(self, *args):
         "Configure ourselves using ip link/addr"
@@ -1068,9 +1068,9 @@ class adhoc(IntfWireless):
                         node.params['wif'][wif] = intf_.replace('mp', 'wif')
         else:
             wif = node.ifaceToAssociate
-        intf = node.params['wlan'][wif]
+        intf = node.params['wif'][wif]
 
-        self.name = node.params['wlan'][wif]
+        self.name = node.params['wif'][wif]
         if 'ssid' not in node.params:
             node.params['ssid'] = []
             for _ in range(0, len(node.params['wif'])):
@@ -1177,7 +1177,7 @@ class mesh(IntfWireless):
         intf = node.params['wif'][wif]
         if node.func[wif] == 'adhoc':
             self.setType('managed', intf)
-        self.name = '%s-mp%s' % (node, node.params['wlan'][wlan][-1:])
+        self.name = '%s-mp%s' % (node, node.params['wif'][wif][-1:])
         if node.func[wif] == 'mesh' and 'phyap' in params:
             self.name = '%s-mp%s' % (node, wif+1)
 
@@ -1275,7 +1275,7 @@ class physicalMesh(IntfWireless):
             node.params['range'][wif] = node.getRange(intf=intf, noiseLevel=95)
 
         params['phyap'] = True
-        self.name = node.params['wlan'][wif]
+        self.name = node.params['wif'][wif]
         self.setPhysicalMeshIface(node, **params)
         ssid = node.params['ssid'][wif]
         freq = node.params['freq'][wif]
