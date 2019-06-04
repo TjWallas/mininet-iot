@@ -171,6 +171,8 @@ class plot2d (object):
         cls.text(node, x, y)
         node.pltNode.set_data(x, y)
         node.pltCircle.center = x, y
+        # Enable the update of the wired links when the nodes have mobility
+        cls.updateLine(node)
 
     @classmethod
     def pause(cls):
