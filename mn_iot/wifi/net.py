@@ -1772,8 +1772,8 @@ class Mininet_wifi(Mininet):
         nodes = self.stations + self.aps + self.cars
         if self.stations or self.aps:
             module.start(nodes, self.n_radios, self.alt_module, **params)
+        sensors = self.sensors + self.l2Sensors
         if mac802154.n_wifs != 0:
-            sensors = self.sensors + self.l2Sensors
             mac802154_module.start(sensors, mac802154.n_wifs)
         self.configureWirelessLink()
         self.createVirtualIfaces(self.stations)
