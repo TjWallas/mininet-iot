@@ -41,7 +41,7 @@ from mn_iot.wifi.propagationModels import propagationModel
 from mn_iot.wifi.vanet import vanet
 from mn_iot.mac802154.net import Mininet_mac802154 as mac802154
 from mn_iot.mac802154.module import module as mac802154_module
-from mn_iot.mac802154.link import mac802154Link
+from mn_iot.mac802154.link import SixLowpan
 
 sys.path.append(str(os.getcwd()) + '/mininet/')
 
@@ -121,7 +121,8 @@ class Mininet_wifi(Mininet):
         self.cars = []
         self.switches = []
         self.stations = []
-        self.sixLP = []
+        self.l2Sensors = []
+        self.sensors = []
         self.terms = []  # list of spawned xterm processes
         self.driver = driver
         self.autoAssociation = autoAssociation # does not include mobility
@@ -250,15 +251,21 @@ class Mininet_wifi(Mininet):
         self.addParameters(sta, self.autoSetMacs, **defaults)
         if 'mac802154' in params:
             mac802154.init(sta, **params)
-            self.sixLP.append(sta)
+            self.sensors.append(sta)
 
         self.stations.append(sta)
         self.nameToNode[name] = sta
         return sta
 
-    def add6lowpan(self, name, cls=None, **params):
-        node = mac802154.add6LoWPAN(name, cls, **params)
-        self.sixLP.append(node)
+    def addSensor(self, name, cls=None, **params):
+        node = mac802154.addSensor(name, cls, **params)
+        self.sensors.append(node)
+        self.nameToNode[name] = node
+        return node
+
+    def addL2Sensor(self, name, cls=None, **params):
+        node = mac802154.addL2Sensor(name, cls, **params)
+        self.l2Sensors.append(node)
         self.nameToNode[name] = node
         return node
 
@@ -390,14 +397,16 @@ class Mininet_wifi(Mininet):
     def __iter__(self):
         "return iterator over node names"
         for node in chain(self.hosts, self.switches, self.controllers,
-                          self.stations, self.cars, self.aps, self.sixLP):
+                          self.stations, self.cars, self.aps, self.sensors,
+                          self.l2Sensors):
             yield node.name
 
     def __len__(self):
         "returns number of nodes in net"
         return (len(self.hosts) + len(self.switches) +
                 len(self.controllers) + len(self.stations) +
-                len(self.cars) + len(self.aps) + len(self.sixLP))
+                len(self.cars) + len(self.aps) +
+                len(self.sensors) + len(self.l2Sensors))
 
     def __contains__(self, item):
         "returns True if net contains named node"
@@ -462,7 +471,7 @@ class Mininet_wifi(Mininet):
         elif cls == wifiDirectLink or cls == physicalWifiDirectLink:
             link = cls(node=node1, port=port1, **params)
             return link
-        elif cls == mac802154Link:
+        elif cls == SixLowpan:
             link = cls(node=node1, port=port1, **params)
             self.links.append(link)
             return link
@@ -637,7 +646,7 @@ class Mininet_wifi(Mininet):
            and up."""
         info('*** Adding nodes:\n')
         for staName in topo.stations():
-            self.add6lowpan(staName, **topo.nodeInfo(staName))
+            self.addSensor(staName, **topo.nodeInfo(staName))
             info(staName + ' ')
 
         info('\n*** Configuring 6lowpan nodes...\n')
@@ -721,7 +730,7 @@ class Mininet_wifi(Mininet):
         if (self.configure4addr or self.configureWiFiDirect
                 or self.wmediumd_mode == error_prob) and self.link == wmediumd:
             wmediumd(self.fading_coefficient, self.noise_threshold,
-                     self.stations, self.aps, self.cars, self.sixLP,
+                     self.stations, self.aps, self.cars, self.sensors,
                      propagationModel, self.wmediumdMac)
             for sta in self.stations:
                 if self.wmediumd_mode != error_prob:
@@ -786,7 +795,8 @@ class Mininet_wifi(Mininet):
         self.terms += makeTerms(self.hosts, 'host')
         self.terms += makeTerms(self.stations, 'station')
         self.terms += makeTerms(self.aps, 'ap')
-        self.terms += makeTerms(self.sixLP, 'sixLP')
+        self.terms += makeTerms(self.sensors, 'sixLP')
+        self.terms += makeTerms(self.l2Sensors, 'l2Sensors')
 
     def stopXterms(self):
         "Kill each xterm."
@@ -881,7 +891,7 @@ class Mininet_wifi(Mininet):
             switch.terminate()
         info('\n')
         info('*** Stopping nodes\n')
-        nodes = self.hosts + self.stations + self.sixLP
+        nodes = self.hosts + self.stations + self.sensors + self.l2Sensors
         for node in nodes:
             info(node.name + ' ')
             node.terminate()
@@ -889,7 +899,7 @@ class Mininet_wifi(Mininet):
         if self.aps is not []:
             self.kill_hostapd()
         self.closeMininetWiFi()
-        if self.sixLP:
+        if self.sensors or self.l2Sensors:
             mac802154_module.stop()
         if self.link == wmediumd:
             self.kill_wmediumd()
@@ -984,8 +994,8 @@ class Mininet_wifi(Mininet):
         else:
             ploss = 0
             output("*** Warning: No packets sent\n")
-        if self.sixLP:
-            nodes = self.sixLP
+        if self.sensors:
+            nodes = self.sensors
             mac802154.ping6(nodes, timeout)
         return ploss
 
@@ -1744,7 +1754,7 @@ class Mininet_wifi(Mininet):
         if not self.configureWiFiDirect and not self.configure4addr and \
             self.wmediumd_mode != error_prob:
             wmediumd(self.fading_coefficient, self.noise_threshold,
-                     self.stations, self.aps, self.cars, self.sixLP,
+                     self.stations, self.aps, self.cars, self.sensors,
                      propagationModel, self.wmediumdMac)
 
     def configureWifiNodes(self):
@@ -1763,11 +1773,12 @@ class Mininet_wifi(Mininet):
         if self.stations or self.aps:
             module.start(nodes, self.n_radios, self.alt_module, **params)
         if mac802154.n_wifs != 0:
-            mac802154_module.start(self.sixLP, mac802154.n_wifs)
+            sensors = self.sensors + self.l2Sensors
+            mac802154_module.start(sensors, mac802154.n_wifs)
         self.configureWirelessLink()
         self.createVirtualIfaces(self.stations)
         AccessPoint(self.aps, self.driver, self.link)
-        for node in self.sixLP:
+        for node in sensors:
             mac802154.configureMacAddr(node)
 
         if self.link == wmediumd:

@@ -798,7 +798,7 @@ class Node_wifi(Node):
         self.wpanports += 1
         return self.wpanports
 
-    def newwifzPort(self):
+    def newWifiPort(self):
         "Return the next port number to allocate."
         self.wifports += 1
         return self.wifports

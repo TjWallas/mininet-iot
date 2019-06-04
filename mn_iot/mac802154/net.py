@@ -16,7 +16,7 @@ from mininet.log import info, error, debug, output
 
 from mn_iot.mac802154.node import Sixlowpan
 from mn_iot.mac802154.module import module
-from mn_iot.mac802154.link import mac802154Link
+from mn_iot.mac802154.link import SixLowpan as SixLowpanLink
 
 
 class Mininet_mac802154(Mininet):
@@ -24,7 +24,7 @@ class Mininet_mac802154(Mininet):
     topo=None
     mac802154=Sixlowpan
     controller=DefaultController
-    link=mac802154Link
+    link=SixLowpanLink
     intf=Intf
     ipBase='2001:0:0:0:0:0:0:0/64'
     inNamespace=False
@@ -42,7 +42,8 @@ class Mininet_mac802154(Mininet):
     nextCore = 0  # next core for pinning hosts to CPUs
     nameToNode = {}  # name to Node (Host/Switch) objects
     links = []
-    sixLP = []
+    l2Sensors = []
+    sensors = []
     terms = []  # list of spawned xterm processes
     n_wifs = 0
     connections = {}
@@ -75,6 +76,8 @@ class Mininet_mac802154(Mininet):
                 self.add_ip_param(node, wifs, **params)
             self.add_mac_param(node, wifs, **params)
 
+            if node in self.l2Sensors:
+                node.params['range'][0] = 100
             node.params['wif'].append(node.name + '-wpan' + str(wif))
             node.params.pop("wifs", None)
 
@@ -190,8 +193,47 @@ class Mininet_mac802154(Mininet):
                 node.setMAC(mac, iface)
 
     @classmethod
-    def add6LoWPAN(self, name, cls=None, **params):
-        """Add 6LoWPAN node.
+    def addL2Sensor(self, name, cls=None, **params):
+        """Add L2 Sensor.
+           name: name of accesspoint to add
+           cls: custom switch class/constructor (optional)
+           returns: added accesspoint
+           side effect: increments listenPort var ."""
+        defaults = {'wif_ip': ipAdd6(self.nextIP,
+                                     ipBaseNum=self.ipBaseNum,
+                                     prefixLen=self.prefixLen) +
+                              '/%s' % self.prefixLen,
+                    'listenPort': self.listenPort,
+                    'inNamespace': self.inNamespace
+                   }
+
+        defaults.update(params)
+        if self.autoSetPositions:
+            defaults['position'] = (round(self.nextPos_ap,2), 50, 0)
+            self.nextPos_ap += 100
+
+        self.nextIP += 1
+        if not cls:
+            cls = self.mac802154
+        node = cls(name, **defaults)
+
+        if not self.inNamespace and self.listenPort:
+            self.listenPort += 1
+
+        if self.inNamespace or ('inNamespace' in params
+                                and params['inNamespace'] is True):
+            node.params['inNamespace'] = True
+
+        self.addParameters(node, defaults, **params)
+
+        self.l2Sensors.append(node)
+        self.nameToNode[name] = node
+
+        return node
+
+    @classmethod
+    def addSensor(self, name, cls=None, **params):
+        """Add Sensor node.
            name: name of station to add
            cls: custom 6LoWPAN class/constructor (optional)
            params: parameters for 6LoWPAN
@@ -220,7 +262,7 @@ class Mininet_mac802154(Mininet):
 
         self.addParameters(node, defaults, **params)
 
-        self.sixLP.append(node)
+        self.sensors.append(node)
         self.nameToNode[name] = node
 
         return node
@@ -288,7 +330,7 @@ class Mininet_mac802154(Mininet):
         lost = 0
         ploss = None
         if not hosts:
-            hosts = self.sixLP
+            hosts = self.sensors
             output('*** Ping: testing ping reachability\n')
         for node in hosts:
             output('%s -> ' % node.name)
@@ -419,7 +461,7 @@ class Mininet_mac802154(Mininet):
            the actual transmission rate; on an unloaded system, server
            rate should be much closer to the actual receive rate"""
         sleep(2)
-        nodes = self.sixLP
+        nodes = self.sensors
         hosts = hosts or [nodes[0], nodes[-1]]
         assert len(hosts) is 2
         client, server = hosts

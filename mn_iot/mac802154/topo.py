@@ -10,7 +10,7 @@ This package includes code to represent network topologies.
 
 from mininet.util import irange
 from mininet.topo import Topo
-from mn_iot.mac802154.link import mac802154Link
+from mn_iot.mac802154.link import SixLowpan
 
 
 class Topo_sixlowpan(Topo):
@@ -88,7 +88,7 @@ class Single6lowpanTopo(Topo_sixlowpan):
         self.k = k
         for h in irange(1, k):
             sta = self.add6lowpan('sta%s' % h)
-            self.addLink(sta, sta, cls=mac802154Link, panid='0xbeef')
+            self.addLink(sta, cls=SixLowpan, panid='0xbeef')
 
 
 class Minimal6lowpanTopo(Single6lowpanTopo):

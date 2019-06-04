@@ -599,7 +599,7 @@ class WirelessLinkAP(object):
                          link=self, mac=addr1, **params1)
 
         if not intfName1:
-            intfName1 = self.wifName(node1, ifacename, node1.newWifPort())
+            intfName1 = self.wifName(node1, ifacename, node1.newWifiPort())
 
         if not cls1:
             cls1 = intf
@@ -669,7 +669,7 @@ class WirelessLinkStation(object):
 
         if not intfName1:
             ifacename = 'wif'
-            intfName1 = self.wifName(node1, ifacename, node1.newWifPort())
+            intfName1 = self.wifName(node1, ifacename, node1.newWifiPort())
 
         if not cls1:
             cls1 = intf

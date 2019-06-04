@@ -214,7 +214,7 @@ class Intfmac802154( object ):
         return self.name
 
 
-class mac802154Link(object):
+class SixLowpan(object):
 
     def __init__(self, node, port=None, intfName=None, addr=None,
                  cls=None, **params):
