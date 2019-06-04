@@ -1362,7 +1362,7 @@ class AccessPoint(AP):
 
     def __init__(self, aps, driver, link):
         'configure ap'
-        self.configure(self, driver, link)
+        self.configure(aps, driver, link)
 
     @classmethod
     def configure(cls, aps, driver, link):
