@@ -65,6 +65,7 @@ class Mininet_mac802154(Mininet):
         defaults: Default IP and MAC addresses
         node_mode: if interface is running in managed or master mode"""
         node.params['wif'] = []
+        node.params['range'] = []
         node.wpanPhyID = []
 
         wifs = self.count6LoWPANIfaces(**params)
@@ -75,9 +76,7 @@ class Mininet_mac802154(Mininet):
                 self.appendAssociatedTo(node)
                 self.add_ip_param(node, wifs, **params)
             self.add_mac_param(node, wifs, **params)
-
-            if node in self.l2Sensors:
-                node.params['range'][0] = 100
+            node.params['range'].append(100)
             node.params['wif'].append(node.name + '-wpan' + str(wif))
             node.params.pop("wifs", None)
 
@@ -240,10 +239,12 @@ class Mininet_mac802154(Mininet):
            returns: added station"""
         # Default IP and MAC addresses
         defaults = {'wif_ip': ipAdd6(self.nextIP,
-                                ipBaseNum=self.ipBaseNum,
-                                prefixLen=self.prefixLen) +
+                                 ipBaseNum=self.ipBaseNum,
+                                 prefixLen=self.prefixLen) +
                           '/%s' % self.prefixLen
                    }
+        if 'ip' in params:
+            params['wif_ip'] = params['ip']
         defaults.update(params)
 
         if self.autoSetPositions:

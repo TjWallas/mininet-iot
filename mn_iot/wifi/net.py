@@ -42,6 +42,7 @@ from mn_iot.wifi.vanet import vanet
 from mn_iot.mac802154.net import Mininet_mac802154 as mac802154
 from mn_iot.mac802154.module import module as mac802154_module
 from mn_iot.mac802154.link import SixLowpan
+from mn_iot.mac802154.mobility import Mobility as mobSensor
 
 sys.path.append(str(os.getcwd()) + '/mininet/')
 
@@ -726,6 +727,10 @@ class Mininet_wifi(Mininet):
                 for node in self.stations:
                     if 'position' in node.params:
                         mob.stations.append(node)
+            if self.sensors and not mobSensor.sensors:
+                for node in self.sensors:
+                    if 'position' in node.params:
+                        mobSensor.sensors.append(node)
 
         if (self.configure4addr or self.configureWiFiDirect
                 or self.wmediumd_mode == error_prob) and self.link == wmediumd:
@@ -768,7 +773,10 @@ class Mininet_wifi(Mininet):
                 self.start_mobility(**self.mob_param)
             else:
                 self.mob_param['plotNodes'] = self.plot_nodes()
-                mob.stop(**self.mob_param)
+                if self.sensors:
+                    mobSensor.stop(**self.mob_param)
+                else:
+                    mob.stop(**self.mob_param)
         else:
             if self.DRAW and not self.isReplaying:
                 plotNodes = self.plot_nodes()
@@ -776,9 +784,9 @@ class Mininet_wifi(Mininet):
         self.built = True
 
     def plot_nodes(self):
-        other_nodes = self.hosts + self.switches + self.controllers
+        mn_nodes = self.hosts + self.switches + self.controllers
         plotNodes = []
-        for node in other_nodes:
+        for node in mn_nodes:
             if hasattr(node, 'plotted') and node.plotted is True:
                 plotNodes.append(node)
         return plotNodes
@@ -1224,7 +1232,8 @@ class Mininet_wifi(Mininet):
         :params src: source node
         :params dst: destination node
         :params nodes: list of nodes"""
-        nodes = self.stations + self.cars + self.aps
+        nodes = self.stations + self.cars + self.aps + \
+                self.sensors + self.l2Sensors
         try:
             for host1 in nodes:
                 if src == str(host1):
@@ -1687,7 +1696,7 @@ class Mininet_wifi(Mininet):
         else:
             self.mob_param.setdefault('min_wt', float(0))
 
-        args = ['seed', 'stations', 'aps', 'DRAW', 'conn']
+        args = ['seed', 'stations', 'aps', 'sensors', 'DRAW', 'conn']
         for arg in args:
             self.mob_param.setdefault(arg, getattr(self, arg))
 
@@ -1702,7 +1711,7 @@ class Mininet_wifi(Mininet):
 
         args = ['min_x', 'min_y', 'min_z',
                   'max_x', 'max_y', 'max_z',
-                  'stations', 'cars', 'aps',
+                  'stations', 'cars', 'aps', 'sensors',
                   'DRAW', 'conn']
         for arg in args:
             self.mob_param.setdefault(arg, getattr(self, arg))
@@ -1809,12 +1818,14 @@ class Mininet_wifi(Mininet):
 
     def plotCheck(self, plotNodes):
         "Check which nodes will be plotted"
-        nodes = self.stations + self.aps + plotNodes + self.cars
+        nodes = self.stations + self.aps + plotNodes + self.cars + \
+                self.l2Sensors + self.sensors
         self.checkDimension(nodes)
 
     def plot_dynamic(self):
         "Check which nodes will be plotted dynamically at runtime"
-        nodes = self.stations + self.aps + self.cars
+        nodes = self.stations + self.aps + self.cars + \
+                self.l2Sensors + self.sensors
         self.checkDimension(nodes)
 
         while True:
@@ -1946,6 +1957,8 @@ class Mininet_wifi(Mininet):
         "Stop the graph"
         if mob.thread_:
             mob.thread_._keep_alive = False
+        if mobSensor.thread_:
+            mobSensor.thread_.keep_alive = False
         sleep(0.5)
 
     def closeMininetWiFi(self):

@@ -9,16 +9,19 @@ import re
 import signal
 import select
 from six import string_types
-
+import numpy as np
+from scipy.spatial.distance import pdist
 from subprocess import Popen, PIPE
 from sys import version_info as py_version_info
 
 from mininet.log import info, error, warn, debug
-from mininet.util import (quietRun, errRun, isShellBuiltin)
+from mininet.util import isShellBuiltin
 from mininet.node import Node
 from mininet.moduledeps import pathCheck
 from mininet.link import Link
 from mn_iot.wifi.util import moveIntf
+
+from mn_iot.wifi.wmediumdConnector import w_cst, wmediumd_mode
 
 
 class Node_mac802154(Node):
@@ -50,6 +53,7 @@ class Node_mac802154(Node):
 
         self.func = []
         self.isStationary = True
+        self.edge = []
 
         # Make pylint happy
         (self.shell, self.execed, self.pid, self.stdin, self.stdout,
@@ -611,6 +615,45 @@ class Node_mac802154(Node):
     def setup(cls):
         "Make sure our class dependencies are available"
         pathCheck('mnexec', 'ip addr', moduleName='Mininet')
+
+    def get_distance_to(self, dst):
+        """Get the distance between two nodes
+        :param self: source node
+        :param dst: destination node"""
+
+        pos_src = self.params['position']
+        pos_dst = dst.params['position']
+        points = np.array([(pos_src[0], pos_src[1], pos_src[2]),
+                           (pos_dst[0], pos_dst[1], pos_dst[2])])
+        dist = pdist(points)
+        return round(dist,2)
+
+    def setPosition(self, pos):
+        "Set Position"
+        pos = pos.split(',')
+        self.params['position'] = float(pos[0]), float(pos[1]), float(pos[2])
+        self.updateGraph()
+
+        if wmediumd_mode.mode == w_cst.INTERFERENCE_MODE:
+            self.set_pos_wmediumd(self.params['position'])
+        self.configLinks()
+
+    def configLinks(self):
+        "Applies channel params and handover"
+        from mn_iot.mac802154.mobility import Mobility
+        Mobility.configLinks(self)
+
+    def updateGraph(self):
+        "Update the Graph"
+        from mn_iot.wifi.plot import plot2d, plot3d
+        cls = plot2d
+        if plot3d.is3d:
+            cls = plot3d
+        if cls.fig_exists():
+            cls.updateCircleRadius(self)
+            cls.updateLine(self)
+            cls.update(self)
+            cls.pause()
 
 
 class Sixlowpan(Node_mac802154):
