@@ -39,6 +39,7 @@ from mn_iot.wifi.plot import plot2d, plot3d, plotGraph
 from mn_iot.wifi.module import module
 from mn_iot.wifi.propagationModels import propagationModel
 from mn_iot.wifi.vanet import vanet
+from mn_iot.mac802154.node import Sixlowpan
 from mn_iot.mac802154.net import Mininet_mac802154 as mac802154
 from mn_iot.mac802154.module import module as mac802154_module
 from mn_iot.mac802154.link import SixLowpan
@@ -53,7 +54,7 @@ class Mininet_wifi(Mininet):
 
     def __init__(self, topo=None, switch=OVSKernelSwitch,
                  accessPoint=OVSKernelAP, host=Host, station=Station,
-                 car=Car, controller=DefaultController,
+                 car=Car, sensor=Sixlowpan, controller=DefaultController,
                  link=TCWirelessLink, intf=Intf, build=True, xterms=False,
                  cleanup=False, ipBase='10.0.0.0/8', inNamespace=False,
                  autoSetMacs=False, autoStaticArp=False, autoPinCpus=False,
@@ -162,6 +163,7 @@ class Mininet_wifi(Mininet):
         self.nroads = 0
         self.conn = {}
         self.wlinks = []
+
         Mininet_wifi.init()  # Initialize Mininet if necessary
 
         if self.rec_rssi:
@@ -448,7 +450,6 @@ class Mininet_wifi(Mininet):
             cls: link class (optional)
             params: additional link params (optional)
             returns: link object"""
-
         # Accept node objects or names
         node1 = node1 if not isinstance(node1, string_types) else self[node1]
         node2 = node2 if not isinstance(node2, string_types) else self[node2]
@@ -642,22 +643,23 @@ class Mininet_wifi(Mininet):
                 # info( '\n' )
 
     def buildFrom6lowpanTopo(self, topo=None):
-        """Build mininet from a topology object
+        """Build mininet-iot from a topology object
            At the end of this function, everything should be connected
            and up."""
         info('*** Adding nodes:\n')
-        for staName in topo.stations():
-            self.addSensor(staName, **topo.nodeInfo(staName))
-            info(staName + ' ')
+        for sensorName in topo.sensors():
+            if sensorName:
+                self.addSensor(sensorName, **topo.nodeInfo(sensorName))
+                info(sensorName + ' ')
 
         info('\n*** Configuring 6lowpan nodes...\n')
         self.configureWifiNodes()
 
         info('\n*** Adding link(s):\n')
-        for srcName, dstName, params in topo.links(
+        for srcName, params in topo.links(
                 sort=True, withInfo=True):
             self.addLink(**params)
-            info('(%s, %s) ' % (srcName, dstName))
+            info('(%s) ' % (srcName))
         info('\n')
 
     def buildFromWirelessTopo(self, topo=None):

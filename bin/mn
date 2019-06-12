@@ -58,9 +58,9 @@ from functools import partial
 
 # Experimental! cluster edition prototype
 from mn_iot.examples.cluster import (MininetCluster, RemoteHost, RemoteStation,
-                                      RemoteOVSSwitch, RemoteOVSAP, RemoteLink,
-                                      SwitchBinPlacer, RandomPlacer,
-                                      ClusterCleanup)
+                                     RemoteSensor, RemoteOVSSwitch, RemoteOVSAP,
+                                     RemoteLink, SwitchBinPlacer, RandomPlacer,
+                                     ClusterCleanup)
 from mn_iot.examples.clustercli import ClusterCLI
 
 PLACEMENT = { 'block': SwitchBinPlacer, 'random': RandomPlacer }
@@ -104,8 +104,8 @@ STATIONS = { 'proc': Station,
           'rt': specialClass(CPULimitedStation, defaults=dict(sched='rt')),
           'cfs': specialClass(CPULimitedStation, defaults=dict(sched='cfs')) }
 
-SIXLPDEF = 'proc'
-SIXLPS = { 'proc': Sixlowpan,
+SENSORDEF = 'proc'
+SENSORS = { 'proc': Sixlowpan,
           'rt': specialClass(CPULimitedStation, defaults=dict(sched='rt')),
           'cfs': specialClass(CPULimitedStation, defaults=dict(sched='cfs')) }
 
@@ -280,7 +280,7 @@ class MininetRunner(object):
         addDictOption(opts, APS, APDEF, 'ap')
         addDictOption(opts, HOSTS, HOSTDEF, 'host')
         addDictOption(opts, STATIONS, STATIONDEF, 'station')
-        addDictOption(opts, SIXLPS, SIXLPDEF, 'sixlp')
+        addDictOption(opts, SENSORS, SENSORDEF, 'sensor')
         addDictOption(opts, CONTROLLERS, [], 'controller', action='append')
         addDictOption(opts, LINKS, LINKDEF, 'link')
         addDictOption(opts, TOPOS, TOPODEF, 'topo')
@@ -444,7 +444,7 @@ class MininetRunner(object):
         ap = customClass(APS, opts.ap)
         host = customClass(HOSTS, opts.host)
         station = customClass(STATIONS, opts.station)
-        sixlp = customClass(SIXLPS, opts.sixlp)
+        sensor = customClass(SENSORS, opts.sensor)
         controller = [ customClass(CONTROLLERS, c)
                        for c in opts.controller ]
 
@@ -501,9 +501,10 @@ class MininetRunner(object):
             warn('*** WARNING: Experimental cluster mode!\n'
                  '*** Using RemoteHost, RemoteStation, RemoteOVSSwitch,'
                  ' RemoteLink\n')
-            host, station, switch, ap, link = RemoteHost, RemoteStation, \
-                                              RemoteOVSSwitch, RemoteOVSAP, \
-                                              RemoteLink
+            host, station, sensor, switch, ap, link = RemoteHost, RemoteStation, \
+                                                      RemoteSensor,\
+                                                      RemoteOVSSwitch, RemoteOVSAP, \
+                                                      RemoteLink
             Net = partial(MininetCluster, servers=servers,
                           placement=PLACEMENT[opts.placement])
             if opts.wifi or opts.sixlowpan:
@@ -513,7 +514,11 @@ class MininetRunner(object):
 
         if opts.wifi or opts.sixlowpan:
             mn = Net(topo=topo,
-                     switch=switch, accessPoint=ap, host=host, station=station,
+                     switch=switch,
+                     accessPoint=ap,
+                     host=host,
+                     station=station,
+                     sensor=sensor,
                      controller=controller,
                      link=link,
                      ipBase=ipBase,

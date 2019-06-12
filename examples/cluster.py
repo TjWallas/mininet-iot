@@ -306,6 +306,10 @@ class RemoteStation( RemoteNode ):
     "A RemoteStation is simply a RemoteNode"
     pass
 
+class RemoteSensor( RemoteNode ):
+    "A RemoteSensor is simply a RemoteNode"
+    pass
+
 
 class RemoteOVSAP( RemoteMixin, OVSAP ):
     "Remote instance of Open vSwitch"
@@ -713,6 +717,7 @@ class MininetCluster( Mininet ):
            placement: Placer() subclass"""
         params = { 'host': RemoteHost,
                    'station': RemoteStation,
+                   'sensor': RemoteSensor,
                    'switch': RemoteOVSSwitch,
                    'link': RemoteLink,
                    'precheck': True }

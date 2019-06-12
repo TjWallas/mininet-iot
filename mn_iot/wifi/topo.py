@@ -82,7 +82,6 @@ class Topo_WiFi(Topo):
            returns: list of stations"""
         return [ n for n in self.nodes( sort ) if not self.isAP( n ) ]
 
-
     def isAP( self, n ):
         "Returns true if node is a switch."
         return self.g.node[ n ].get( 'isAP', False )
