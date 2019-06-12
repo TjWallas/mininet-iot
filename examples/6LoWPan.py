@@ -54,6 +54,8 @@ def topology(mob):
     if not mob:
         os.system('wpan-hwsim edge add 1 2')
         os.system('wpan-hwsim edge add 2 1')
+        os.system('wpan-hwsim edge lqi 1 2 30')
+        os.system('wpan-hwsim edge lqi 2 1 30')
 
     info("*** Running CLI\n")
     CLI_wifi(net)

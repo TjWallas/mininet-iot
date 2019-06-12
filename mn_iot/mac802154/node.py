@@ -20,7 +20,7 @@ from mininet.node import Node
 from mininet.moduledeps import pathCheck
 from mininet.link import Link
 from mn_iot.wifi.util import moveIntf
-
+from mn_iot.wifi.propagationModels import propagationModel
 from mn_iot.wifi.wmediumdConnector import w_cst, wmediumd_mode
 
 
@@ -627,6 +627,10 @@ class Node_mac802154(Node):
                            (pos_dst[0], pos_dst[1], pos_dst[2])])
         dist = pdist(points)
         return round(dist,2)
+
+    def get_rssi(self, node=None, wif=0, dist=0):
+        value = propagationModel(self, node, dist, wif)
+        return float(value.rssi)
 
     def setPosition(self, pos):
         "Set Position"

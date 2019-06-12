@@ -26,21 +26,40 @@ class Mobility(object):
                 dist = src.get_distance_to(dst)
                 if dist > src.params['range'][0]:
                     if dst in src.edge:
-                        self.handle_edge(src, dst)
+                        id_src, id_dst = self.get_node_id(src, dst)
+                        self.handle_edge(id_src, id_src)
                         src.edge.remove(dst)
                         dst.edge.remove(src)
                 else:
                     if dst not in src.edge:
-                        self.handle_edge(src, dst, act='add')
+                        id_src, id_dst = self.get_node_id(src, dst)
+                        self.handle_edge(id_src, id_dst, act='add')
+                        lqi = int(self.get_rssi(src, dst, dist))
+                        self.set_lqi(id_src, id_dst, lqi)
                         src.edge.append(dst)
                         dst.edge.append(src)
 
     @classmethod
-    def handle_edge(self, src, dst, act='del'):
+    def get_node_id(self, src, dst):
         id_src = int(re.findall(r'\d+', src.name)[0]) - 1
         id_dst = int(re.findall(r'\d+', dst.name)[0]) - 1
-        os.system('wpan-hwsim edge %s %s %s >/dev/null 2>&1' % (act, id_src, id_dst))
-        os.system('wpan-hwsim edge %s %s %s >/dev/null 2>&1' % (act, id_dst, id_src))
+        return id_src, id_dst
+
+    @classmethod
+    def handle_edge(self, src, dst, act='del'):
+        os.system('wpan-hwsim edge %s %s %s >/dev/null 2>&1' % (act, src, dst))
+        os.system('wpan-hwsim edge %s %s %s >/dev/null 2>&1' % (act, dst, src))
+
+    @classmethod
+    def get_rssi(self, src, dst, dist):
+        rssi = src.get_rssi(dst, 0, dist)
+        lqi = 100 + rssi
+        return lqi
+
+    @classmethod
+    def set_lqi(self, src, dst, lqi):
+        os.system('wpan-hwsim edge lqi %s %s %s' % (src, dst, lqi))
+        os.system('wpan-hwsim edge lqi %s %s %s' % (dst, src, lqi))
 
     @classmethod
     def stop(cls, **kwargs):
