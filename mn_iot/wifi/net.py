@@ -1878,15 +1878,18 @@ class Mininet_wifi(Mininet):
                                 node.set_pos_wmediumd(pos)
 
             mob.aps = self.aps
-            nodes = self.stations + self.cars
+            sensors_ = self.sensors + self.l2Sensors
+            nodes = self.stations + self.cars + sensors_
             for node in nodes:
-                if 'position' in node.params and 'link' not in node.params:
-
-                    mob.configLinks(node)
-                    if self.rec_rssi:
-                        os.system('hwsim_mgmt -k %s %s >/dev/null 2>&1'
-                                  % (node.phyID[wif],
-                                     abs(int(node.params['rssi'][wif]))))
+                if node in sensors_:
+                    mobSensor.configLinks(node)
+                else:
+                    if 'position' in node.params and 'link' not in node.params:
+                        mob.configLinks(node)
+                        if self.rec_rssi:
+                            os.system('hwsim_mgmt -k %s %s >/dev/null 2>&1'
+                                      % (node.phyID[wif],
+                                         abs(int(node.params['rssi'][wif]))))
 
     @staticmethod
     def propagation_model(**kwargs):

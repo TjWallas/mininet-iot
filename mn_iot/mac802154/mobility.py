@@ -24,20 +24,23 @@ class Mobility(object):
         for dst in self.sensors:
             if src != dst:
                 dist = src.get_distance_to(dst)
+                id_src, id_dst = self.get_node_id(src, dst)
                 if dist > src.params['range'][0]:
                     if dst in src.edge:
-                        id_src, id_dst = self.get_node_id(src, dst)
                         self.handle_edge(id_src, id_src)
                         src.edge.remove(dst)
                         dst.edge.remove(src)
+                    src.set_lqi(dst, 0)
+                    dst.set_lqi(src, 0)
                 else:
                     if dst not in src.edge:
-                        id_src, id_dst = self.get_node_id(src, dst)
                         self.handle_edge(id_src, id_dst, act='add')
-                        lqi = int(self.get_rssi(src, dst, dist))
-                        self.set_lqi(id_src, id_dst, lqi)
                         src.edge.append(dst)
                         dst.edge.append(src)
+                    lqi = int(self.get_rssi(src, dst, dist))
+                    self.set_lqi(id_src, id_dst, lqi)
+                    src.set_lqi(dst, lqi)
+                    dst.set_lqi(src, lqi)
 
     @classmethod
     def get_node_id(self, src, dst):

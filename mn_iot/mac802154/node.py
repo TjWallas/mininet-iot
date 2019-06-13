@@ -632,6 +632,10 @@ class Node_mac802154(Node):
         value = propagationModel(self, node, dist, wif)
         return float(value.rssi)
 
+    def set_lqi(self, dst, lqi):
+        self.params['lqi'][dst] = lqi
+        dst.params['lqi'][self] = lqi
+
     def setPosition(self, pos):
         "Set Position"
         pos = pos.split(',')

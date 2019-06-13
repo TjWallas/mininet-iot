@@ -124,6 +124,7 @@ class Mininet_mac802154(Mininet):
                     if param == 'freq':
                         value = 2.412
                     node.params[param].append(value)
+            node.params['lqi'] = {}
 
     @staticmethod
     def add_mac_param(node, wifs, autoSetMacs=False, **params):
