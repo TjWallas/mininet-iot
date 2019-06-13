@@ -27,7 +27,7 @@ class Mobility(object):
                 id_src, id_dst = self.get_node_id(src, dst)
                 if dist > src.params['range'][0]:
                     if dst in src.edge:
-                        self.handle_edge(id_src, id_src)
+                        self.handle_edge(id_src, id_dst)
                         src.edge.remove(dst)
                         dst.edge.remove(src)
                     src.set_lqi(dst, 0)
