@@ -17,5 +17,5 @@ To create a sample two-sixlowpan-nodes, just run:
 
 `sudo mn --sixlowpan`  
 
-##### Note: Since mac802154_hwsim is supported from Kernel version 4.18, you may want to consider to run Mininet-IoT from this version.
+##### Note: Since mac802154_hwsim is only supported from Kernel version 4.18, you may want to consider to run Mininet-IoT from this Kernel version.
 
