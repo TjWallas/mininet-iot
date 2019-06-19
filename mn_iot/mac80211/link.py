@@ -11,8 +11,8 @@ from sys import version_info as py_version_info
 from six import string_types
 
 from mininet.log import info, error, debug
-from mn_iot.wifi.devices import GetRate
-from mn_iot.wifi.wmediumdConnector import DynamicWmediumdIntfRef, \
+from mn_iot.mac80211.devices import GetRate
+from mn_iot.mac80211.wmediumdConnector import DynamicWmediumdIntfRef, \
     w_starter, SNRLink, w_txpower, w_pos, \
     w_cst, w_server, ERRPROBLink, wmediumd_mode
 

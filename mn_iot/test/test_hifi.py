@@ -15,7 +15,7 @@ from mininet.topo import Topo
 from mininet.log import setLogLevel
 from mininet.util import quietRun
 from mininet.clean import cleanup
-from mn_iot.wifi.node import OVSAP, UserAP
+from mn_iot.mac80211.node import OVSAP, UserAP
 
 
 # Number of stations for each test

@@ -26,19 +26,19 @@ from mininet.link import Link, Intf, TCLink, TCULink
 from mininet.nodelib import NAT
 from mininet.log import info, error, debug, output, warn
 
-from mn_iot.wifi.node import AccessPoint, AP, Station, Car, \
+from mn_iot.mac80211.node import AccessPoint, AP, Station, Car, \
     OVSKernelAP
-from mn_iot.wifi.wmediumdConnector import w_starter, w_server, \
+from mn_iot.mac80211.wmediumdConnector import w_starter, w_server, \
     error_prob, snr, interference
-from mn_iot.wifi.link import wirelessLink, wmediumd, Association, \
+from mn_iot.mac80211.link import wirelessLink, wmediumd, Association, \
     _4address, TCWirelessLink, TCLinkWirelessStation, ITSLink, \
     wifiDirectLink, adhoc, mesh, physicalMesh, physicalWifiDirectLink
-from mn_iot.wifi.devices import GetRate, GetRange
-from mn_iot.wifi.mobility import mobility as mob
-from mn_iot.wifi.plot import plot2d, plot3d, plotGraph
-from mn_iot.wifi.module import module
-from mn_iot.wifi.propagationModels import propagationModel
-from mn_iot.wifi.vanet import vanet
+from mn_iot.mac80211.devices import GetRate, GetRange
+from mn_iot.mac80211.mobility import mobility as mob
+from mn_iot.mac80211.plot import plot2d, plot3d, plotGraph
+from mn_iot.mac80211.module import module
+from mn_iot.mac80211.propagationModels import propagationModel
+from mn_iot.mac80211.vanet import vanet
 from mn_iot.mac802154.node import Sixlowpan
 from mn_iot.mac802154.net import Mininet_mac802154 as mac802154
 from mn_iot.mac802154.module import module as mac802154_module

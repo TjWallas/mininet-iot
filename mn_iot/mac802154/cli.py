@@ -1,6 +1,6 @@
 import sys
 
-from mn_iot.wifi.cli import CLI_wifi
+from mn_iot.mac80211.cli import CLI_wifi
 
 class CLI_mac802154(CLI_wifi):
     "Simple command-line interface to talk to nodes."

@@ -277,7 +277,7 @@ class GetSignalRange(object):
     
     def logNormalShadowing(self, **kwargs):
         """Log-Normal Shadowing Propagation Loss Model"""
-        from mn_iot.wifi.wmediumdConnector import WmediumdGRandom, w_server
+        from mn_iot.mac80211.wmediumdConnector import WmediumdGRandom, w_server
 
         ref_d = 1
         txpower = kwargs['node'].params['txpower'][kwargs['wif']]
@@ -391,7 +391,7 @@ class GetPowerGivenRange(object):
     def logNormalShadowing(self, **kwargs):
         """Log-Normal Shadowing Propagation Loss Model
         distance is the range of the transmitter (m)"""
-        from mn_iot.wifi.wmediumdConnector import WmediumdGRandom, w_server
+        from mn_iot.mac80211.wmediumdConnector import WmediumdGRandom, w_server
 
         mean = 0
         d = kwargs['dist']

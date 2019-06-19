@@ -24,7 +24,7 @@ if 'PYTHONPATH' in os.environ:
 
 from mininet.clean import cleanup
 from mininet.log import lg, LEVELS, info, debug, warn, error, output
-from mn_iot.wifi.net import VERSION
+from mn_iot.mac80211.net import VERSION
 from mininet.net import MininetWithControlNet
 from mininet.net import Mininet
 from mininet.node import (Host, CPULimitedHost, Controller, OVSController,
@@ -41,17 +41,17 @@ from mininet.topolib import TreeTopo, TorusTopo
 from mininet.util import customClass, specialClass, splitArgs
 from mininet.util import buildTopo
 
-import mn_iot.wifi.cli
-from mn_iot.wifi.clean import cleanup_wifi
-from mn_iot.wifi.net import MininetWithControlWNet
-from mn_iot.wifi.net import Mininet_wifi
-from mn_iot.wifi.topo import (SingleAPTopo, LinearWirelessTopo,
-                          MinimalWirelessTopo)
+import mn_iot.mac80211.cli
+from mn_iot.mac80211.clean import cleanup_wifi
+from mn_iot.mac80211.net import MininetWithControlWNet
+from mn_iot.mac80211.net import Mininet_wifi
+from mn_iot.mac80211.topo import (SingleAPTopo, LinearWirelessTopo,
+                                  MinimalWirelessTopo)
 
 from mn_iot.mac802154.topo import Single6lowpanTopo
 from mn_iot.mac802154.node import Sixlowpan
-from mn_iot.wifi.link import TCWirelessLink, wmediumd
-from mn_iot.wifi.node import (Station, UserAP, OVSAP, CPULimitedStation)
+from mn_iot.mac80211.link import TCWirelessLink, wmediumd
+from mn_iot.mac80211.node import (Station, UserAP, OVSAP, CPULimitedStation)
 
 
 from functools import partial
@@ -508,7 +508,7 @@ class MininetRunner(object):
             Net = partial(MininetCluster, servers=servers,
                           placement=PLACEMENT[opts.placement])
             if opts.wifi or opts.sixlowpan:
-                mn_iot.wifi.cli.CLI_wifi = ClusterCLI
+                mn_iot.mac80211.cli.CLI_wifi = ClusterCLI
             else:
                 Mininet.cli.CLI = ClusterCLI
 
@@ -550,7 +550,7 @@ class MininetRunner(object):
 
         # --custom files can set CLI or change mininet.cli.CLI
         if opts.wifi:
-            CLI = mn_iot.wifi.cli.CLI_wifi if CLI is None else CLI
+            CLI = mn_iot.mac80211.cli.CLI_wifi if CLI is None else CLI
         else:
             from mininet.cli import CLI as mininet_cli
             CLI = mininet_cli if CLI is None else CLI

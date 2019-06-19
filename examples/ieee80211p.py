@@ -6,10 +6,10 @@
    *** Tested with 5805 Mhz"""
 
 from mininet.log import setLogLevel, info
-from mn_iot.wifi.link import wmediumd, ITSLink
-from mn_iot.wifi.cli import CLI_wifi
-from mn_iot.wifi.net import Mininet_wifi
-from mn_iot.wifi.wmediumdConnector import interference
+from mn_iot.mac80211.link import wmediumd, ITSLink
+from mn_iot.mac80211.cli import CLI_wifi
+from mn_iot.mac80211.net import Mininet_wifi
+from mn_iot.mac80211.wmediumdConnector import interference
 
 
 def topology():

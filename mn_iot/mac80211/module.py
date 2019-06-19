@@ -262,7 +262,7 @@ class module(object):
         :param physicalwifs: list of Physical wifs
         :param phys: list of phys
         :param **params: ifb -  Intermediate Functional Block device"""
-        from mn_iot.wifi.node import Station, Car
+        from mn_iot.mac80211.node import Station, Car
 
         log_filename = '/tmp/mn-wifi-mac80211_hwsim.log'
         cls.logging_to_file("%s" % log_filename)

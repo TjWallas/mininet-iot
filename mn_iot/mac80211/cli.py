@@ -29,7 +29,7 @@ class CLI_wifi(CLI):
             self.mn.get_distance(*args)
 
     def do_link(self, line):
-        from mn_iot.wifi.plot import plot2d
+        from mn_iot.mac80211.plot import plot2d
         """Bring link(s) between two nodes up or down.
            Usage: link node1 node2 [up/down]"""
         args = line.split()

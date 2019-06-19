@@ -19,9 +19,9 @@ from mininet.util import isShellBuiltin
 from mininet.node import Node
 from mininet.moduledeps import pathCheck
 from mininet.link import Link
-from mn_iot.wifi.util import moveIntf
-from mn_iot.wifi.propagationModels import propagationModel
-from mn_iot.wifi.wmediumdConnector import w_cst, wmediumd_mode
+from mn_iot.mac80211.util import moveIntf
+from mn_iot.mac80211.propagationModels import propagationModel
+from mn_iot.mac80211.wmediumdConnector import w_cst, wmediumd_mode
 
 
 class Node_mac802154(Node):
@@ -653,7 +653,7 @@ class Node_mac802154(Node):
 
     def updateGraph(self):
         "Update the Graph"
-        from mn_iot.wifi.plot import plot2d, plot3d
+        from mn_iot.mac80211.plot import plot2d, plot3d
         cls = plot2d
         if plot3d.is3d:
             cls = plot3d

@@ -3,7 +3,7 @@ import os
 import threading
 
 from threading import Thread as thread
-from mn_iot.wifi.mobility import mobility
+from mn_iot.mac80211.mobility import mobility
 from sys import version_info as py_version_info
 
 

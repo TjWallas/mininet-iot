@@ -40,14 +40,14 @@ from mininet.util import (quietRun, errRun, errFail, mountCgroups,
 from mininet.node import Node
 from mininet.moduledeps import moduleDeps, pathCheck, TUN
 from mininet.link import Link, Intf, OVSIntf
-from mn_iot.wifi.link import TCWirelessLink, TCLinkWirelessAP,\
+from mn_iot.mac80211.link import TCWirelessLink, TCLinkWirelessAP,\
     Association, wirelessLink, adhoc, mesh, physicalMesh
-from mn_iot.wifi.wmediumdConnector import w_server, w_pos, w_txpower, \
+from mn_iot.mac80211.wmediumdConnector import w_server, w_pos, w_txpower, \
     w_gain, w_height, w_cst, wmediumd_mode
-from mn_iot.wifi.propagationModels import GetSignalRange, \
+from mn_iot.mac80211.propagationModels import GetSignalRange, \
     GetPowerGivenRange, propagationModel
-from mn_iot.wifi.util import moveIntf
-from mn_iot.wifi.module import module
+from mn_iot.mac80211.util import moveIntf
+from mn_iot.mac80211.module import module
 
 
 class Node_wifi(Node):
@@ -237,7 +237,7 @@ class Node_wifi(Node):
 
     def configLinks(self):
         "Applies channel params and handover"
-        from mn_iot.wifi.mobility import mobility
+        from mn_iot.mac80211.mobility import mobility
         mobility.configLinks(self)
 
     def getMAC(self, iface):
@@ -280,7 +280,7 @@ class Node_wifi(Node):
 
     def setRange(self, value, intf=None):
         "Set Signal Range"
-        from mn_iot.wifi.plot import plot2d
+        from mn_iot.mac80211.plot import plot2d
         wif = 0
         if intf:
             wif = self.get_wif(intf)
@@ -297,7 +297,7 @@ class Node_wifi(Node):
 
     def updateGraph(self):
         "Update the Graph"
-        from mn_iot.wifi.plot import plot2d, plot3d
+        from mn_iot.mac80211.plot import plot2d, plot3d
         cls = plot2d
         if plot3d.is3d:
             cls = plot3d
@@ -435,7 +435,7 @@ class Node_wifi(Node):
             freq = 5.825
         else:
             freq = 2.412
-        return freq
+        return float(format(freq, '.3f'))
 
     def get_rssi(self, node=None, wif=0, dist=0):
         value = propagationModel(self, node, dist, wif)
@@ -1060,7 +1060,7 @@ class Node_wifi(Node):
 
     def stop_(self):
         "Stops hostapd"
-        from mn_iot.wifi.plot import plot2d
+        from mn_iot.mac80211.plot import plot2d
         process = 'mn%d_%s' % (os.getpid(), self.name)
         os.system('pkill -f \'hostapd -B %s\'' % process)
         if plot2d.fig_exists():
@@ -1068,7 +1068,7 @@ class Node_wifi(Node):
 
     def start_(self):
         "Starts hostapd"
-        from mn_iot.wifi.plot import plot2d
+        from mn_iot.mac80211.plot import plot2d
         process = 'mn%d_%s' % (os.getpid(), self.name)
         os.system('hostapd -B %s-wlan1.apconf' % process)
         if plot2d.fig_exists():
@@ -1077,14 +1077,14 @@ class Node_wifi(Node):
     def hide(self):
         for wif in self.params['wif']:
             self.cmd('ip link set %s down' % wif)
-        from mn_iot.wifi.plot import plot2d
+        from mn_iot.mac80211.plot import plot2d
         if plot2d.fig_exists():
             plot2d.hideNode(self)
 
     def show(self):
         for wif in self.params['wif']:
             self.cmd('ip link set %s up' % wif)
-        from mn_iot.wifi.plot import plot2d
+        from mn_iot.mac80211.plot import plot2d
         if plot2d.fig_exists():
             plot2d.showNode(self)
 
@@ -1703,7 +1703,7 @@ class AccessPoint(AP):
         """First verify if the mac address of the ap is included at
         NetworkManager.conf
         :param node: node"""
-        from mn_iot.wifi.link import IntfWireless
+        from mn_iot.mac80211.link import IntfWireless
         if 'inNamespace' not in node.params:
             if not isinstance(node, Station):
                 wintf = module.wif_list[0]

@@ -12,11 +12,11 @@ from threading import Thread as thread
 import random
 from pylab import math, cos, sin
 from mininet.log import info
-from mn_iot.wifi.plot import plot2d, plot3d
-from mn_iot.wifi.mobility import mobility
-from mn_iot.wifi.link import wirelessLink
-from mn_iot.wifi.devices import GetRate
-from mn_iot.wifi.node import Station, AP
+from mn_iot.mac80211.plot import plot2d, plot3d
+from mn_iot.mac80211.mobility import mobility
+from mn_iot.mac80211.link import wirelessLink
+from mn_iot.mac80211.devices import GetRate
+from mn_iot.mac80211.node import Station, AP
 
 
 class replayingMobility(object):

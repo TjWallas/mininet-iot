@@ -8,7 +8,7 @@ def moveIntfNoRetry(intf, dstNode):
        intf: string, interface
         dstNode: destination Node
         printError: if true, print error"""
-    from mn_iot.wifi.node import Station, Car, AP
+    from mn_iot.mac80211.node import Station, Car, AP
 
     if (isinstance(dstNode, Station) or isinstance(dstNode, Car)
             or isinstance(dstNode, AP) and 'eth' not in str(intf)):
@@ -23,7 +23,7 @@ def moveIntf(intf, dstNode, printError=True,
        intf: string, interface
        dstNode: destination Node
        printError: if true, print error"""
-    from mn_iot.wifi.node import AP
+    from mn_iot.mac80211.node import AP
 
     if not isinstance(dstNode, AP):
         retry(retries, delaySecs, moveIntfNoRetry, intf, dstNode,

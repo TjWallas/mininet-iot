@@ -18,8 +18,8 @@ import matplotlib.cbook
 from pylab import ginput as ginp
 from pylab import math, cos, sin, np
 
-from mn_iot.wifi.plot import plot2d
-from mn_iot.wifi.node import AP
+from mn_iot.mac80211.plot import plot2d
+from mn_iot.mac80211.node import AP
 from mininet.log import info
 
 
@@ -42,7 +42,7 @@ class vanet(object):
     time_per_iteration = 100 * math.pow(10, -3)
 
     def __init__(self, **params):
-        from mn_iot.wifi.mobility import mobility
+        from mn_iot.mac80211.mobility import mobility
         mobility.thread_ = thread(name='vanet', target=self.start,
                                   kwargs=dict(params,))
         mobility.thread_.daemon = True
@@ -51,7 +51,7 @@ class vanet(object):
 
     def start(self, **params):
         'start topology'
-        from mn_iot.wifi.mobility import mobility
+        from mn_iot.mac80211.mobility import mobility
 
         cars = params['cars']
         mobility.stations = cars

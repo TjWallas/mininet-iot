@@ -4,9 +4,9 @@
 
 from __future__ import print_function
 from mininet.log import setLogLevel, info
-from mn_iot.wifi.cli import CLI_wifi
-from mn_iot.wifi.net import Mininet_wifi
-from mn_iot.wifi.link import adhoc
+from mn_iot.mac80211.cli import CLI_wifi
+from mn_iot.mac80211.net import Mininet_wifi
+from mn_iot.mac80211.link import adhoc
 
 
 def topology():

@@ -3,8 +3,8 @@
 'This example shows how to work with authentication'
 
 from mininet.log import setLogLevel, info
-from mn_iot.wifi.cli import CLI_wifi
-from mn_iot.wifi.net import Mininet_wifi
+from mn_iot.mac80211.cli import CLI_wifi
+from mn_iot.mac80211.net import Mininet_wifi
 
 
 def topology():

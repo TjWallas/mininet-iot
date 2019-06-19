@@ -46,7 +46,7 @@ slowtest: $(MININET_IoT)
 	mn_iot/test/test_walkthrough.py -v
 	mn_iot/examples/test/runner.py -v
 
-mnexec: mnexec.c $(MN) mn_iot/wifi/net.py
+mnexec: mnexec.c $(MN) mn_iot/mac80211/net.py
 	cc $(CFLAGS) $(LDFLAGS) -DVERSION=\"`PYTHONPATH=. $(PYMN) --version`\" $< -o $@
 
 install-mnexec: $(MNEXEC)

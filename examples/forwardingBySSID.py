@@ -24,9 +24,9 @@ from time import sleep
 
 from mininet.node import Controller
 from mininet.log import setLogLevel, info
-from mn_iot.wifi.node import UserAP
-from mn_iot.wifi.cli import CLI_wifi
-from mn_iot.wifi.net import Mininet_wifi
+from mn_iot.mac80211.node import UserAP
+from mn_iot.mac80211.cli import CLI_wifi
+from mn_iot.mac80211.net import Mininet_wifi
 
 
 def topology():

@@ -6,10 +6,10 @@ from random import randint
 
 from mininet.node import Controller
 from mininet.log import setLogLevel, info
-from mn_iot.wifi.cli import CLI_wifi
-from mn_iot.wifi.net import Mininet_wifi
-from mn_iot.wifi.link import wmediumd, mesh
-from mn_iot.wifi.wmediumdConnector import interference
+from mn_iot.mac80211.cli import CLI_wifi
+from mn_iot.mac80211.net import Mininet_wifi
+from mn_iot.mac80211.link import wmediumd, mesh
+from mn_iot.mac80211.wmediumdConnector import interference
 
 
 def topology():

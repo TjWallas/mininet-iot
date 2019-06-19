@@ -8,9 +8,9 @@ import numpy as np
 from numpy.random import rand
 
 from mininet.log import debug, info
-from mn_iot.wifi.link import wirelessLink, Association
-from mn_iot.wifi.associationControl import associationControl
-from mn_iot.wifi.plot import plot2d, plot3d, plotGraph
+from mn_iot.mac80211.link import wirelessLink, Association
+from mn_iot.mac80211.associationControl import associationControl
+from mn_iot.mac80211.plot import plot2d, plot3d, plotGraph
 
 
 class mobility(object):
@@ -345,7 +345,7 @@ class mobility(object):
     @classmethod
     def configLinks(cls, node=None):
         "Applies channel params and handover"
-        from mn_iot.wifi.node import AP
+        from mn_iot.mac80211.node import AP
         if node:
             if isinstance(node, AP) or node in cls.aps:
                 nodes = cls.stations
@@ -399,7 +399,7 @@ class tracked(thread):
         self.plot = ''
 
     def configure(self, **kwargs):
-        from mn_iot.wifi.node import Station
+        from mn_iot.mac80211.node import Station
 
         if 'ac_method' in kwargs:
             mobility.ac = kwargs['ac_method']

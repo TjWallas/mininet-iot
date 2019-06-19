@@ -103,7 +103,7 @@ class plot3d (object):
     @classmethod
     def instantiateCircle(cls, node):
         "Instantiate Circle"
-        from mn_iot.wifi.node import Station, Car
+        from mn_iot.mac80211.node import Station, Car
 
         x, y, z = cls.getPos(node)
         color = 'b'
@@ -234,7 +234,7 @@ class plot2d (object):
 
     @classmethod
     def set_def_color(cls, node):
-        from mn_iot.wifi.node import Station, Car
+        from mn_iot.mac80211.node import Station, Car
         if 'color' in node.params:
             color = node.params['color']
         else:

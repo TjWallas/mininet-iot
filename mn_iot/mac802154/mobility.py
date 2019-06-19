@@ -5,8 +5,8 @@ from time import sleep
 
 from threading import Thread as thread
 from mininet.log import debug, info
-from mn_iot.wifi.plot import plot2d, plot3d, plotGraph
-from mn_iot.wifi.mobility import mobility
+from mn_iot.mac80211.plot import plot2d, plot3d, plotGraph
+from mn_iot.mac80211.mobility import mobility
 
 
 class Mobility(object):
