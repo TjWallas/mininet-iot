@@ -88,13 +88,10 @@ class mobility(object):
                 initPos = node.coord[0]
                 node.params['initPos'] = initPos.split(',')
 
-        if 'time' in kwargs:
-            time_ = kwargs['time']
-
         if stage == 'start':
-            node.startTime = time_
+            node.startTime = kwargs['time']
         elif stage == 'stop':
-            cls.calculate_diff_time(node, time_)
+            cls.calculate_diff_time(node, kwargs['time'])
 
     @classmethod
     def calculate_diff_time(cls, node, time=0):
@@ -128,7 +125,7 @@ class mobility(object):
         :param diff_time: difference between start and stop time. Useful for
         calculating the speed"""
         sta.params['speed'] = round(abs(((pos_x + pos_y + pos_z) /
-                                            diff_time)),2)
+                                         diff_time)),2)
 
     @classmethod
     def ap_out_of_range(cls, sta, ap, wif, ap_wif):
@@ -152,12 +149,11 @@ class mobility(object):
             elif cls.wmediumd_mode and cls.wmediumd_mode != 3:
                 Association.setSNRWmediumd(sta, ap, snr=-10)
                 sta.params['rssi'][wif] = 0
-            if 'encrypt' in ap.params and 'ieee80211r' not in ap.params or \
-                            'encrypt' not in ap.params:
+            if 'ieee80211r' not in ap.params:
                 debug('iw dev %s disconnect\n' % sta.params['wif'][wif])
                 sta.pexec('iw dev %s disconnect' % sta.params['wif'][wif])
-            sta.params['associatedTo'][wif] = ''
-            sta.params['channel'][wif] = 0
+        sta.params['associatedTo'][wif] = ''
+        sta.params['channel'][wif] = 0
         if sta in ap.params['associatedStations']:
             ap.params['associatedStations'].remove(sta)
         if ap in sta.params['apsInRange']:
