@@ -1718,13 +1718,12 @@ class AccessPoint(AP):
     @classmethod
     def checkNetworkManager(cls, mac):
         "add mac address into /etc/NetworkManager/NetworkManager.conf"
-        write_mac = False
-        net_ = 'NetworkManager'
+        nm = 'NetworkManager'
         unmanaged = 'unmanaged-devices'
         unmatch = ""
-        if os.path.exists('/etc/%s/%s.conf' % (net_, net_)):
-            if os.path.isfile('/etc/%s/%s.conf' % (net_, net_)):
-                cls.resultIface = open('/etc/%s/%s.conf' % (net_, net_))
+        if os.path.exists('/etc/%s/%s.conf' % (nm, nm)):
+            if os.path.isfile('/etc/%s/%s.conf' % (nm, nm)):
+                cls.resultIface = open('/etc/%s/%s.conf' % (nm, nm))
                 lines = cls.resultIface
 
             isNew = True
@@ -1736,24 +1735,18 @@ class AccessPoint(AP):
                     echo = echo[:-1] + ";"
                     isNew = False
             if isNew:
-                os.system("echo '#' >> /etc/%s/%s.conf" % (net_, net_))
-                unmatch = "#"
+                os.system("echo '#' >> /etc/%s/%s.conf" % (nm, nm))
                 echo = "[keyfile]\n%s=" % unmanaged
 
             if mac not in unmatch:
                 echo = echo + "mac:" + mac + ';'
-                write_mac = True
-
-            if write_mac:
-                for line in fileinput.input('/etc/%s/%s.conf' % (net_, net_),
+                for line in fileinput.input('/etc/%s/%s.conf' % (nm, nm),
                                             inplace=1):
                     if isNew:
-                        cls.write_to_file(line, unmatch, echo, unmatch)
+                        cls.write_to_file(line, unmatch, echo, '#')
                     else:
                         cls.write_to_file(line, unmatch, echo, unmanaged)
-
-        if not cls.write_mac:
-            cls.write_mac = write_mac
+                cls.write_mac = True
 
     @classmethod
     def write_to_file(cls, line, unmatch, echo, str_):
