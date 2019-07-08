@@ -15,12 +15,22 @@ class Mobility(object):
     mobileNodes = []
     thread_ = ''
     wmediumd_mode = None
+    dist = 0
+    noise = 0
+    equationLoss = '(dist * 2) / 1000'
+    equationDelay = '(dist / 10) + 1'
+    equationLatency = '(dist / 10)/2'
+    equationBw = ' * (1.01 ** -dist)'
 
     #def __init__(self, src):
     #    self.get_edge(src)
 
     @classmethod
     def get_edge(self, src):
+        nedges = 0
+        lat = 0
+        loss = 0
+        bw = 0
         for dst in self.sensors:
             if src != dst:
                 dist = src.get_distance_to(dst)
@@ -41,6 +51,62 @@ class Mobility(object):
                     self.set_lqi(id_src, id_dst, lqi)
                     src.set_lqi(dst, lqi)
                     dst.set_lqi(src, lqi)
+                    nedges += 1
+
+                if self.sensors.index(dst) == (len(self.sensors)-1) or \
+                                self.sensors.index(src) == (len(self.sensors)-1):
+                    lat = (self.getLatency(dist)+lat)/nedges
+                    loss = (self.getLoss(dist)+loss)/nedges
+                    bw = (self.getBW(dist=dist)+bw)/nedges
+
+        if nedges:
+            self.config_tc(src, 0, bw, loss, lat)
+
+    @classmethod
+    def getDelay(cls, dist):
+        return eval(cls.equationDelay)
+
+    @classmethod
+    def getLatency(cls, dist):
+        return eval(cls.equationLatency)
+
+    @classmethod
+    def getLoss(cls, dist):
+        return eval(cls.equationLoss)
+
+    @classmethod
+    def getBW(cls, dist=0):
+        custombw = 2
+        rate = eval(str(custombw) + cls.equationBw)
+
+        if rate <= 0.0:
+            rate = 0.1
+        return rate
+
+    @classmethod
+    def config_tc(cls, node, wif, bw, loss, latency):
+        """config_tc
+        :param node: node
+        :param wif: wif ID
+        :param bw: bandwidth (mbps)
+        :param loss: loss (%)
+        :param latency: latency (ms)"""
+        iface = node.params['wif'][wif]
+        cls.tc(node, iface, bw, loss, latency)
+
+    @classmethod
+    def tc(cls, node, iface, bw, loss, latency):
+        cmd = "tc qdisc replace dev %s root handle 2: netem " % iface
+        rate = "rate %.4fmbit " % bw
+        cmd += rate
+        if latency > 0.1:
+            latency = "latency %.2fms " % latency
+            cmd += latency
+        if loss > 0.1:
+            loss = "loss %.1f%% " % loss
+            cmd += loss
+        print cmd
+        node.pexec(cmd)
 
     @classmethod
     def get_node_id(self, src, dst):
