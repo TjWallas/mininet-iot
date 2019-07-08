@@ -563,12 +563,12 @@ class Mininet_wifi(Mininet):
             wif = sta_wif
         params['wif'] = wif
         # If sta/ap have position
-        doAssociation = True
+        associate = True
         if 'position' in sta.params and 'position' in ap.params:
             dist = sta.get_distance_to(ap)
             if dist > ap.params['range'][ap_wif]:
-                doAssociation = False
-        if doAssociation:
+                associate = False
+        if associate:
             sta.params['mode'][wif] = ap.params['mode'][ap_wif]
             sta.params['channel'][wif] = ap.params['channel'][ap_wif]
             enable_wmediumd = False
@@ -579,7 +579,7 @@ class Mininet_wifi(Mininet):
                 enable_interference = True
             if not self.topo:
                 params['printCon'] = True
-            params['doAssociation'] = True
+            params['associate'] = True
             Association.associate(sta, ap, enable_wmediumd,
                                   enable_interference, **params)
             if 'TCWirelessLink' in str(self.link.__name__):
@@ -1312,7 +1312,7 @@ class Mininet_wifi(Mininet):
                 if sta.params['associatedTo'][wif]:
                     sta.cmd('iw dev %s disconnect' % sta.params['wif'][wif])
                     sta.params['associatedTo'][wif] = ''
-                    ap.params['associatedStations'].remove(sta)
+                    ap.params['assocStas'].remove(sta)
         else:
             for wif in range(0, len(sta.params['wif'])):
                 if not sta.params['associatedTo'][wif]:
@@ -1320,7 +1320,7 @@ class Mininet_wifi(Mininet):
                               % (sta.params['wif'][wif],
                                  ap.params['ssid'][0], ap.params['mac'][0]))
                     sta.params['associatedTo'][wif] = ap
-                    ap.params['associatedStations'].append(sta)
+                    ap.params['assocStas'].append(sta)
 
     # BL: I think this can be rewritten now that we have
     # a real link class.
@@ -1496,8 +1496,8 @@ class Mininet_wifi(Mininet):
             node.model = model
 
         if node_mode == 'master':
-            node.params['associatedStations'] = []
-            node.params['stationsInRange'] = {}
+            node.params['assocStas'] = []
+            node.params['stasInRange'] = {}
 
             node.params['mac'] = []
             node.params['mac'].append('')

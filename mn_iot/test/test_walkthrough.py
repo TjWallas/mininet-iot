@@ -612,14 +612,14 @@ class testWalkthrough(unittest.TestCase):
         p.expect('ap1 ap1-wlan0:wifi ap1-wlan1:wifi ap1-eth2:ap2-eth2')
         p.expect(self.prompt)
         stations = [ 'Station sta1: sta1-wlan0:10.0.0.1', self.prompt ]
-        p.sendline('py ap1.params[\'associatedStations\']')
+        p.sendline('py ap1.params[\'assocStas\']')
         p.expect(stations)
-        p.sendline('py ap1.params[\'stationsInRange\']')
+        p.sendline('py ap1.params[\'stasInRange\']')
         p.expect(stations)
         stations = [ 'Station sta2: sta2-wlan0:10.0.0.2', self.prompt ]
-        p.sendline('py ap2.params[\'associatedStations\']')
+        p.sendline('py ap2.params[\'assocStas\']')
         p.expect(stations)
-        p.sendline('py ap2.params[\'stationsInRange\']')
+        p.sendline('py ap2.params[\'stasInRange\']')
         p.expect(stations)
         p.sendline('py sta1.setPosition(\'100,40,0\')')
         sleep(4)
@@ -631,14 +631,14 @@ class testWalkthrough(unittest.TestCase):
         p.expect(self.prompt)
         stations = [ 'Station sta1: sta1-wlan0:10.0.0.1',
                      'Station sta2: sta2-wlan0:10.0.0.2', self.prompt ]
-        p.sendline('py ap2.params[\'associatedStations\']')
+        p.sendline('py ap2.params[\'assocStas\']')
         p.expect(stations)
-        p.sendline('py ap2.params[\'stationsInRange\']')
+        p.sendline('py ap2.params[\'stasInRange\']')
         p.expect(stations)
         stations = [ self.prompt ]
-        p.sendline('py ap1.params[\'associatedStations\']')
+        p.sendline('py ap1.params[\'assocStas\']')
         p.expect(stations)
-        p.sendline('py ap1.params[\'stationsInRange\']')
+        p.sendline('py ap1.params[\'stasInRange\']')
         p.expect(stations)
         p.sendline('sta1 ping -c 1 sta2')
         p.expect('0% packet loss')

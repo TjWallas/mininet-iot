@@ -1187,7 +1187,7 @@ class mesh(IntfWireless):
 
         self.setType('mp', node.params['wif'][wif])
         self.setMAC(node.params['mac'][wif])
-        node.cmd('ip link set %s down' % intf)
+        self.cmd('ip link set %s down' % intf)
         node.params['wif'][wif] = self.name
 
         if 'channel' in params:
@@ -1195,7 +1195,7 @@ class mesh(IntfWireless):
 
         if 'mode' in params and (params['mode'] == 'a'
                                  or params['mode'] == 'ac'):
-            node.pexec('iw reg set US')
+            self.pexec('iw reg set US')
 
         intf = node.params['wif'][wif]
         if 'freq' in params:
@@ -1204,7 +1204,7 @@ class mesh(IntfWireless):
             self.params['freq'][wif] = freq
 
         if 'ip' in node.params:
-            node.cmd('ip addr add %s dev %s' % (node.params['ip'][wif],
+            self.cmd('ip addr add %s dev %s' % (node.params['ip'][wif],
                                                 self.name))
         else:
             self.name = intf
@@ -1346,22 +1346,21 @@ class Association(object):
             if not enable_interference:
                 if sta.params['rssi'][wif] == 0:
                     cls.updateParams(sta, ap, wif)
-            if ('doAssociation' in params and ap != sta.params['associatedTo'][wif]) or \
+            if ('associate' in params and ap != sta.params['associatedTo'][wif]) or \
                     (not sta.params['associatedTo'][wif]
                      and ap not in sta.params['associatedTo']):
                 cls.associate_infra(sta, ap, **params)
                 if not enable_wmediumd:
                     if dist >= 0.01:
                         wirelessLink(sta, ap, dist, **params)
-                if sta not in ap.params['associatedStations']:
-                    ap.params['associatedStations'].append(sta)
+                if sta not in ap.params['assocStas']:
+                    ap.params['assocStas'].append(sta)
             if not enable_interference:
                 rssi = sta.get_rssi(ap, wif, dist)
                 sta.params['rssi'][wif] = rssi
-            if ap not in sta.params['apsInRange']:
-                sta.params['apsInRange'].append(ap)
-                if not enable_interference:
-                    ap.params['stationsInRange'][sta] = rssi
+                if ap not in sta.params['apsInRange']:
+                    sta.params['apsInRange'].append(ap)
+                    ap.params['stasInRange'][sta] = rssi
 
     @classmethod
     def updateParams(cls, sta, ap, wif):
@@ -1534,8 +1533,8 @@ class Association(object):
         if sta.params['associatedTo'][wif] != 'active_scan' \
             and sta.params['associatedTo'][wif] != 'bgscan':
             if sta.params['associatedTo'][wif] \
-                    and sta in sta.params['associatedTo'][wif].params['associatedStations']:
-                sta.params['associatedTo'][wif].params['associatedStations'].remove(sta)
+                    and sta in sta.params['associatedTo'][wif].params['assocStas']:
+                sta.params['associatedTo'][wif].params['assocStas'].remove(sta)
             cls.updateParams(sta, ap, wif)
-            ap.params['associatedStations'].append(sta)
+            ap.params['assocStas'].append(sta)
             sta.params['associatedTo'][wif] = ap

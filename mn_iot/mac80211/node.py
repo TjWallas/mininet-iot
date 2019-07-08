@@ -201,8 +201,8 @@ class Node_wifi(Node):
             if wif == wif_:
                 self.params['ssid'][wif] = ssid
         self.params['driver'] = 'nl80211'
-        self.params['associatedStations'] = []
-        self.params['stationsInRange'] = {}
+        self.params['assocStas'] = []
+        self.params['stasInRange'] = {}
         self.params.pop('rssi', None)
         self.params.pop('apsInRange', None)
         self.params.pop('associatedTo', None)

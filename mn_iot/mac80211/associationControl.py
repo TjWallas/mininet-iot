@@ -17,14 +17,17 @@ class associationControl(object):
         if ac in dir(self):
             self.__getattribute__(ac)(sta=sta, ap=ap, wif=wif)
 
+    def disconnect(self, sta, wif):
+        return 'iw dev %s disconnect' % sta.params['wif'][wif]
+
     def llf(self, sta, ap, wif):
         #llf: Least loaded first
         apref = sta.params['associatedTo'][wif]
         if apref != '':
-            ref_llf = len(apref.params['associatedStations'])
-            if len(ap.params['associatedStations']) + 2 < ref_llf:
-                debug('iw dev %s disconnect\n' % sta.params['wif'][wif])
-                sta.pexec('iw dev %s disconnect' % sta.params['wif'][wif])
+            ref_llf = len(apref.params['assocStas'])
+            if len(ap.params['assocStas']) + 2 < ref_llf:
+                debug(self.disconnect(sta, wif))
+                sta.pexec(self.disconnect(sta, wif))
                 self.changeAP = True
         else:
             self.changeAP = True
@@ -38,7 +41,7 @@ class associationControl(object):
         ref_dist = sta.get_distance_to(ap)
         ref_rssi = sta.get_rssi(ap, wif, ref_dist)
         if float(ref_rssi) > float(rssi + 0.1):
-            debug('iw dev %s disconnect\n' % sta.params['wif'][wif])
-            sta.pexec('iw dev %s disconnect' % sta.params['wif'][wif])
+            debug(self.disconnect(sta, wif))
+            sta.pexec(self.disconnect(sta, wif))
             self.changeAP = True
         return self.changeAP

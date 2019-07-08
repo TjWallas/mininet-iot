@@ -154,11 +154,11 @@ class mobility(object):
                 sta.pexec('iw dev %s disconnect' % sta.params['wif'][wif])
         sta.params['associatedTo'][wif] = ''
         sta.params['channel'][wif] = 0
-        if sta in ap.params['associatedStations']:
-            ap.params['associatedStations'].remove(sta)
+        if sta in ap.params['assocStas']:
+            ap.params['assocStas'].remove(sta)
         if ap in sta.params['apsInRange']:
             sta.params['apsInRange'].remove(ap)
-            ap.params['stationsInRange'].pop(sta, None)
+            ap.params['stasInRange'].pop(sta, None)
 
     @classmethod
     def ap_in_range(cls, sta, ap, wif, dist):
@@ -171,18 +171,15 @@ class mobility(object):
         if ap not in sta.params['apsInRange']:
             sta.params['apsInRange'].append(ap)
         rssi = sta.get_rssi(ap, wif, dist)
-        ap.params['stationsInRange'][sta] = rssi
+        ap.params['stasInRange'][sta] = rssi
         if ap == sta.params['associatedTo'][wif]:
             if cls.rec_rssi:
                 sta.params['rssi'][wif] = rssi
-                debug('hwsim_mgmt -k %s %s >/dev/null 2>&1\n'
-                          % (sta.phyID[wif],
-                             abs(int(sta.params['rssi'][wif]))))
                 os.system('hwsim_mgmt -k %s %s >/dev/null 2>&1'
                           % (sta.phyID[wif],
                              abs(int(sta.params['rssi'][wif]))))
-            if sta not in ap.params['associatedStations']:
-                ap.params['associatedStations'].append(sta)
+            if sta not in ap.params['assocStas']:
+                ap.params['assocStas'].append(sta)
             if dist >= 0.01:
                 if Association.bgscan or 'active_scan' in sta.params \
                 and ('encrypt' in sta.params and 'wpa' in sta.params['encrypt'][wif]):
@@ -232,6 +229,27 @@ class mobility(object):
         if not sta.params['associatedTo'][wif] or changeAP:
             if ap not in sta.params['associatedTo']:
                 Association.associate_infra(sta, ap, wif=wif, ap_wif=ap_wif)
+
+    @classmethod
+    def start_mob_mod(cls, mob, nodes, graph):
+        """
+        :param mob: mobility params
+        :param nodes: list of nodes
+        """
+        for xy in mob:
+            for idx, node in enumerate(nodes):
+                pos = round(xy[idx][0], 2), \
+                      round(xy[idx][1], 2), \
+                      0.0
+                cls.set_pos(node, pos)
+                if graph:
+                    plot2d.update(node)
+            if graph:
+                plot2d.pause()
+            else:
+                sleep(0.5)
+            while cls.pause_simulation:
+                pass
 
     @classmethod
     def models(cls, **kwargs):
@@ -316,27 +334,6 @@ class mobility(object):
                 pass
 
             cls.start_mob_mod(mob, kwargs['nodes'], kwargs['DRAW'])
-
-        @classmethod
-        def start_mob_mod(cls, mob, nodes, graph):
-            """
-            :param mob: mobility params
-            :param nodes: list of nodes
-            """
-            for xy in mob:
-                for idx, node in enumerate(nodes):
-                    pos = round(xy[idx][0], 2), \
-                          round(xy[idx][1], 2), \
-                          0.0
-                    cls.set_pos(node, pos)
-                    if graph:
-                        plot2d.update(node)
-                if graph:
-                    plot2d.pause()
-                else:
-                    sleep(0.5)
-                while cls.pause_simulation:
-                    pass
 
     @classmethod
     def configLinks(cls, node=None):
