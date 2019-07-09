@@ -105,7 +105,6 @@ class Mobility(object):
         if loss > 0.1:
             loss = "loss %.1f%% " % loss
             cmd += loss
-        print cmd
         node.pexec(cmd)
 
     @classmethod
