@@ -9,7 +9,7 @@ import numpy as np
 from scipy.spatial.distance import pdist
 
 from mininet.log import info, warn, debug
-from mininet.util import Python3
+from mininet.util import Python3, getincrementaldecoder
 from mininet.node import Node
 from mininet.moduledeps import pathCheck
 from mininet.link import Link
@@ -59,7 +59,11 @@ class Node_mac802154(Node):
         self.waiting = False
         self.readbuf = ''
 
+        # Incremental decoder for buffered reading
+        self.decoder = getincrementaldecoder()
+
         # Start command interpreter shell
+        self.master, self.slave = None, None  # pylint
         self.startShell()
         self.mountPrivateDirs()
 

@@ -32,7 +32,7 @@ from six import string_types
 
 from mininet.log import info, error, warn, debug
 from mininet.util import (quietRun, errRun, errFail, mountCgroups,
-                          numCores, retry, Python3)
+                          numCores, retry, Python3, getincrementaldecoder)
 from mininet.node import Node
 from mininet.moduledeps import moduleDeps, pathCheck, TUN
 from mininet.link import Link, Intf, OVSIntf
@@ -86,7 +86,11 @@ class Node_wifi(Node):
         self.waiting = False
         self.readbuf = ''
 
+        # Incremental decoder for buffered reading
+        self.decoder = getincrementaldecoder()
+
         # Start command interpreter shell
+        self.master, self.slave = None, None  # pylint
         self.startShell()
         self.mountPrivateDirs()
 
