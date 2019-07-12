@@ -523,49 +523,15 @@ class Node_wifi(Node):
            moveIntfFn: function to move interface (optional)"""
         if port is None:
             port = self.newPort()
-        self.intfs[ port ] = intf
-        self.ports[ intf ] = port
-        self.nameToIntf[ intf.name ] = intf
+        self.intfs[port] = intf
+        self.ports[intf] = port
+        self.nameToIntf[intf.name] = intf
         debug('\n')
-        debug('added intf %s (%s) to node %s\n' %
-              (intf, port, self.name))
+        debug('added intf %s (%d) to node %s\n' % (
+            intf, port, self.name))
         if self.inNamespace:
-            if hasattr(self, 'type'):
-                debug('moving', intf, 'into namespace for', self.name, '\n')
-                moveIntfFn(intf.name, self)
-
-    def delIntf(self, intf):
-        """Remove interface from Node's known interfaces
-           Note: to fully delete interface, call intf.delete() instead"""
-        port = self.ports.get(intf)
-        if port is not None:
-            del self.intfs[ port ]
-            del self.ports[ intf ]
-            del self.nameToIntf[ intf.name ]
-
-    def defaultIntf(self):
-        "Return interface for lowest port"
-        ports = self.intfs.keys()
-        if ports:
-            return self.intfs[ min(ports) ]
-        else:
-            warn('*** defaultIntf: warning:', self.name,
-                 'has no interfaces\n')
-
-    def intf(self, intf=None):
-        """Return our interface object with given string name,
-           default intf if name is falsy (None, empty string, etc).
-           or the input intf arg.
-        Having this fcn return its arg for Intf objects makes it
-        easier to construct functions with flexible input args for
-        interfaces (those that accept both string names and Intf objects).
-        """
-        if not intf:
-            return self.defaultIntf()
-        elif isinstance(intf, string_types):
-            return self.nameToIntf[ intf ]
-        else:
-            return intf
+            debug('moving', intf, 'into namespace for', self.name, '\n')
+            moveIntfFn(intf.name, self)
 
     def connectionsTo(self, node):
         "Return [ intf1, intf2... ] for all intfs that connect self to node."
@@ -581,53 +547,7 @@ class Node_wifi(Node):
                     connections += [ (intf, link.intf1) ]
         return connections
 
-    def deleteIntfs(self, checkName=True):
-        """Delete all of our interfaces.
-           checkName: only delete interfaces that contain our name"""
-        # In theory the interfaces should go away after we shut down.
-        # However, this takes time, so we're better off removing them
-        # explicitly so that we won't get errors if we run before they
-        # have been removed by the kernel. Unfortunately this is very slow,
-        # at least with Linux kernels before 2.6.33
-        for intf in list(self.intfs.values()):
-            # Protect against deleting hardware interfaces
-            if (self.name in intf.name) or (not checkName):
-                intf.delete()
-                info('.')
-
-    # Routing support
-
-    def setARP(self, ip, mac):
-        """Add an ARP entry.
-           ip: IP address as string
-           mac: MAC address as string"""
-        result = self.cmd('arp', '-s', ip, mac)
-        return result
-
-    def setHostRoute(self, ip, intf):
-        """Add route to host.
-           ip: IP address as dotted decimal
-           intf: string, interface name"""
-        return self.cmd('route add -host', ip, 'dev', intf)
-
-    def setDefaultRoute(self, intf=None):
-        """Set the default route to go through intf.
-           intf: Intf or {dev <intfname> via <gw-ip> ...}"""
-        # Note setParam won't call us if intf is none
-        if isinstance(intf, string_types) and ' ' in intf:
-            params = intf
-        else:
-            params = 'dev %s' % intf
-        # Do this in one line in case we're messing with the root namespace
-        self.cmd('ip route del default; ip route add default', params)
-
     # Convenience and configuration methods
-    def setMAC(self, mac, intf=None):
-        """Set the MAC address for an interface.
-           intf: intf or intf name
-           mac: MAC address as string"""
-        return self.intf(intf).setMAC(mac)
-
     def setIP(self, ip, prefixLen=8, intf=None, **kwargs):
         """Set the IP address for an interface.
            intf: intf or intf name
@@ -653,45 +573,6 @@ class Node_wifi(Node):
 
         return self.intf(intf).setIP(ip, prefixLen, **kwargs)
 
-    def IP(self, intf=None):
-        "Return IP address of a node or specific interface."
-        return self.intf(intf).IP()
-
-    def MAC(self, intf=None):
-        "Return MAC address of a node or specific interface."
-        return self.intf(intf).MAC()
-
-    def intfIsUp(self, intf=None):
-        "Check if an interface is up."
-        return self.intf(intf).isUp()
-
-    # The reason why we configure things in this way is so
-    # That the parameters can be listed and documented in
-    # the config method.
-    # Dealing with subclasses and superclasses is slightly
-    # annoying, but at least the information is there!
-
-    def setParam(self, results, method, **param):
-        """Internal method: configure a *single* parameter
-           results: dict of results to update
-           method: config method name
-           param: arg=value (ignore if value=None)
-           value may also be list or dict"""
-        name, value = list(param.items())[ 0 ]
-        if value is None:
-            return
-        f = getattr(self, method, None)
-        if not f:
-            return
-        if isinstance(value, list):
-            result = f(*value)
-        elif isinstance(value, dict):
-            result = f(**value)
-        else:
-            result = f(value)
-        results[ name ] = result
-        return result
-
     def config(self, mac=None, ip=None, defaultRoute=None, lo='up', **_params):
         """Configure Node according to (optional) parameters:
            mac: MAC address for default interface
@@ -715,26 +596,6 @@ class Node_wifi(Node):
         self.cmd('ip link set lo ' + lo)
         return r
 
-    def configDefault(self, **moreParams):
-        "Configure with default parameters"
-        self.params.update(moreParams)
-        self.config(**self.params)
-
-    # This is here for backward compatibility
-    def linkTo(self, node, link=Link):
-        """(Deprecated) Link to another node
-           replace with Link( node1, node2)"""
-        return link(self, node)
-
-    # Other methods
-    def intfList(self):
-        "List of our interfaces sorted by port number"
-        return [ self.intfs[ p ] for p in sorted(self.intfs.keys()) ]
-
-    def intfNames(self):
-        "The names of our interfaces sorted by port number"
-        return [ str(i) for i in self.intfList() ]
-
     def __repr__(self):
         "More informative string representation"
         intfs = (','.join([ '%s:%s' % (i.name, i.IP())
@@ -748,15 +609,6 @@ class Node_wifi(Node):
 
     # Automatic class setup support
     isSetup = False
-
-    @classmethod
-    def checkSetup(cls):
-        "Make sure our class and superclasses are set up"
-        while cls and not getattr(cls, 'isSetup', True):
-            cls.setup()
-            cls.isSetup = True
-            # Make pylint happy
-            cls = getattr(type(cls), '__base__', None)
 
     @classmethod
     def setup(cls):

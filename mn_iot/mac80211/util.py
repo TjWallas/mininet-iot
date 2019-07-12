@@ -3,7 +3,7 @@
 from mininet.util import retry
 
 
-def moveIntfNoRetry(intf, dstNode):
+def moveIntfNoRetry(intf, dstNode, printError=False):
     """Move interface to node, without retrying.
        intf: string, interface
         dstNode: destination Node
