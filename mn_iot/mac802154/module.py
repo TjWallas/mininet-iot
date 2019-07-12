@@ -13,11 +13,8 @@ from sys import version_info as py_version_info
 class module(object):
     "wireless module"
 
-    wif_list = []
-    hwsim_ids = []
     externally_managed = False
     devices_created_dynamically = False
-    wpanPhyID = 0
 
     @classmethod
     def load_module(cls, n_radios, alt_module=''):
@@ -115,18 +112,19 @@ class module(object):
         return cls.wif_list
 
     @classmethod
-    def getPhy(cls, wif):
+    def getPhy(cls):
         'Gets the list of virtual wifs that already exist'
         if py_version_info < (3, 0):
-            phy = (subprocess.check_output("iwpan dev | grep -B 1 %s"
-                                           " | sed -ne '1 s/phy#\([0-9]\)/\\1/p'" % wif,
+            phy = (subprocess.check_output("iwpan dev | grep phy | "
+                                           "sed -ne 's/phy#\([0-9]\)/\\1/p'",
                                            shell=True)).split("\n")
         else:
-            phy = (subprocess.check_output("iwpan dev | grep -B 1 %s"
-                                           " | sed -ne '1 s/phy#\([0-9]\)/\\1/p'" % wif,
+            phy = (subprocess.check_output("iwpan dev | grep phy | "
+                                           "sed -ne 's/phy#\([0-9]\)/\\1/p'",
                                            shell=True)).decode('utf-8').split("\n")
-        phy.pop()
-        return phy[0]
+        phy = sorted(phy)
+        phy.pop(0)
+        return phy
 
     @classmethod
     def assign_iface(cls, nodes, phys, **params):
@@ -141,16 +139,19 @@ class module(object):
         try:
             debug("\n*** Configuring interfaces with appropriated network"
                   "-namespaces...\n")
+            phy = cls.getPhy()
+            wif_list = cls.get_virtual_wpan()
+            wpanPhyID = 0
             for node in nodes:
                 for wif in range(0, len(node.params['wif'])):
-                    node.wpanPhyID[wif] = cls.wpanPhyID
-                    cls.wpanPhyID += 1
-                    phy = cls.getPhy(phys[0])
-                    os.system('iwpan phy phy%s set netns %s' % (phy, node.pid))
-                    node.cmd('ip link set %s down' % cls.wif_list[0])
+                    node.wpanPhyID[wif] = wpanPhyID
+                    wpanPhyID += 1
+                    os.system('iwpan phy phy%s set netns %s' % (phy[0], node.pid))
+                    node.cmd('ip link set %s down' % wif_list[0])
                     node.cmd('ip link set %s name %s'
-                             % (cls.wif_list[0], node.params['wif'][wif]))
-                    cls.wif_list.pop(0)
+                             % (wif_list[0], node.params['wif'][wif]))
+                    wif_list.pop(0)
+                    phy.pop(0)
         except:
             logging.exception("Warning:")
             info("Warning! Error when loading mac802154_hwsim. "
