@@ -496,14 +496,6 @@ class Node_wifi(Node):
         else:
             info("%s is out of range!" % (ap))
 
-    # Interface management, configuration, and routing
-
-    # BL notes: This might be a bit redundant or over-complicated.
-    # However, it does allow a bit of specialization, including
-    # changing the canonical interface names. It's also tricky since
-    # the real interfaces are created as veth pairs, so we can't
-    # make a single interface at a time.
-
     def newWpanPort(self):
         "Return the next port number to allocate."
         self.wpanports += 1

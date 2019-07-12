@@ -106,7 +106,7 @@ class IntfWireless(object):
 
     def ipAddr(self, *args):
         "Configure ourselves using ip link/addr"
-        if self.name not in self.node.params['wlan']:
+        if self.name not in self.node.params['wif']:
             self.cmd('ip addr flush ', self.name)
             return self.cmd('ip addr add', args[0], 'dev', self.name)
         else:
