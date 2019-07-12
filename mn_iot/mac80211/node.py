@@ -30,19 +30,19 @@ import numpy as np
 from scipy.spatial.distance import pdist
 from six import string_types
 
-from mininet.log import info, error, warn, debug
+from mininet.log import info, error, debug
 from mininet.util import (quietRun, errRun, errFail, mountCgroups,
-                          numCores, retry, Python3, getincrementaldecoder)
+                          numCores, retry, Python3, getincrementaldecoder,
+                          moveIntf)
 from mininet.node import Node
 from mininet.moduledeps import moduleDeps, pathCheck, TUN
-from mininet.link import Link, Intf, OVSIntf
+from mininet.link import Intf, OVSIntf
 from mn_iot.mac80211.link import TCWirelessLink, TCLinkWirelessAP,\
     Association, wirelessLink, adhoc, mesh, physicalMesh
 from mn_iot.mac80211.wmediumdConnector import w_server, w_pos, w_txpower, \
     w_gain, w_height, w_cst, wmediumd_mode
 from mn_iot.mac80211.propagationModels import GetSignalRange, \
     GetPowerGivenRange, propagationModel
-from mn_iot.mac80211.util import moveIntf
 from mn_iot.mac80211.module import module
 
 
@@ -529,9 +529,11 @@ class Node_wifi(Node):
         debug('\n')
         debug('added intf %s (%d) to node %s\n' % (
             intf, port, self.name))
-        if self.inNamespace:
-            debug('moving', intf, 'into namespace for', self.name, '\n')
-            moveIntfFn(intf.name, self)
+        if (not isinstance(self, Station) and (not isinstance(self, Car))
+            and (not isinstance(self, AccessPoint))):
+            if self.inNamespace:
+                debug('moving', intf, 'into namespace for', self.name, '\n')
+                moveIntfFn(intf.name, self)
 
     def connectionsTo(self, node):
         "Return [ intf1, intf2... ] for all intfs that connect self to node."

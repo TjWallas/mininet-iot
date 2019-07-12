@@ -4,16 +4,13 @@ author: Ramon Fontes (ramonrf@dca.fee.unicamp.br)
 """
 
 import re
-from six import string_types
 import numpy as np
 from scipy.spatial.distance import pdist
 
-from mininet.log import info, warn, debug
-from mininet.util import Python3, getincrementaldecoder
+from mininet.log import info, debug
+from mininet.util import Python3, getincrementaldecoder, moveIntf
 from mininet.node import Node
 from mininet.moduledeps import pathCheck
-from mininet.link import Link
-from mn_iot.mac80211.util import moveIntf
 from mn_iot.mac80211.propagationModels import propagationModel
 from mn_iot.mac80211.wmediumdConnector import w_cst, wmediumd_mode
 
@@ -118,9 +115,10 @@ class Node_mac802154(Node):
         debug('\n')
         debug('added intf %s (%d) to node %s\n' % (
             intf, port, self.name))
-        if self.inNamespace:
-            debug('moving', intf, 'into namespace for', self.name, '\n')
-            moveIntfFn(intf.name, self)
+        if (not isinstance(self, Sixlowpan)):
+            if self.inNamespace:
+                debug('moving', intf, 'into namespace for', self.name, '\n')
+                moveIntfFn(intf.name, self)
 
     def getMAC(self, iface):
         "get Mac Address of any Interface"
