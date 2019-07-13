@@ -1782,10 +1782,10 @@ class Mininet_wifi(Mininet):
             params['ssh_user'] = self.ssh_user
         nodes = self.stations + self.aps + self.cars
         if self.stations or self.aps:
-            module.start(nodes, self.n_radios, self.alt_module, **params)
+            module(nodes, self.n_radios, self.alt_module, **params)
         sensors = self.sensors + self.l2Sensors
         if mac802154.n_wifs != 0:
-            mac802154_module.start(sensors, mac802154.n_wifs)
+            mac802154_module(sensors, mac802154.n_wifs)
         self.configureWirelessLink()
         self.createVirtualIfaces(self.stations)
         AccessPoint(self.aps, self.driver, self.link)

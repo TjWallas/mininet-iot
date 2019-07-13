@@ -154,7 +154,7 @@ class Node_wifi(Node):
                 self.params[kwarg] = []
                 self.params[kwarg].append(kwargs[kwarg])
 
-        AccessPoint.verifyNetworkManager(self, wif)
+        AccessPoint.configAP(self, wif)
         link = None
         if wmediumd_mode.mode != 4:
             link = 'wmediumd'
@@ -955,7 +955,7 @@ class AccessPoint(AP):
                     ap.params['mac'].append('')
             ap.params['driver'] = driver
             for wif in range(len(ap.params['wif'])):
-                cls.verifyNetworkManager(ap, wif)
+                cls.configAP(ap, wif)
                 if 'vssids' in ap.params:
                     break
         cls.restartNetworkManager()
@@ -972,8 +972,6 @@ class AccessPoint(AP):
                     cls.setConfig(ap, aps, wif, link)
                     if 'vssids' in ap.params:
                         break
-                ap.phyID = module.phyID
-                module.phyID += 1
 
     @classmethod
     def setConfig(cls, ap, aplist=None, wif=0, link=None, ssid=None):
@@ -1260,16 +1258,7 @@ class AccessPoint(AP):
         cls.write_mac = False
 
     @classmethod
-    def verifyNetworkManager(cls, node, wif):
-        """First verify if the mac address of the ap is included at
-        NetworkManager.conf
-        :param node: node"""
-        from mn_iot.mac80211.link import IntfWireless
-        if 'inNamespace' not in node.params:
-            if not isinstance(node, Station):
-                wintf = module.wif_list[0]
-                module.wif_list.pop(0)
-                IntfWireless.rename(node, wintf, node.params['wif'][wif])
+    def configAP(cls, node, wif):
         TCLinkWirelessAP(node)
         #cls.links.append(link)
         cls.setIPMAC(node, wif)

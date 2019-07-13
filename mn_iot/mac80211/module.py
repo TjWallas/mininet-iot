@@ -1,6 +1,5 @@
-"""
-author: Ramon Fontes (ramonrf@dca.fee.unicamp.br)
-"""
+# author: Ramon Fontes (ramonrf@dca.fee.unicamp.br)
+
 
 import glob
 import os
@@ -14,20 +13,39 @@ from mininet.log import debug, info, error
 class module(object):
     "wireless module"
 
-    wif_list = []
-    hwsim_ids = []
     prefix = ""
     externally_managed = False
     devices_created_dynamically = False
-    phyID = 0
 
-    @classmethod
-    def load_module(cls, n_radios, nodes, alt_module, **params):
+    def __init__(self, nodes, n_radios, alt_module, **params):
+        self.start(nodes, n_radios, alt_module, **params)
+
+    def start(self, nodes, n_radios, alt_module, **params):
+        """Starts environment
+
+        :param nodes: list of wireless nodes
+        :param n_radios: number of wifi radios
+        :param alt_module: dir of a mac80211_hwsim alternative module
+        :param **params: ifb -  Intermediate Functional Block device"""
+        try:
+            h = subprocess.check_output("ps -aux | grep -ic \'hostapd\'",
+                                        shell=True)
+            if h >= 2:
+                os.system('pkill -f \'hostapd\'')
+        except:
+            pass
+
+        physicalwifs = self.get_physical_wif()  # Gets Physical wif(s)
+        self.load_module(n_radios, nodes, alt_module, **params)  # Initatilize WiFi Module
+        phys = self.get_phy()  # Get Phy Interfaces
+        self.assign_iface(nodes, physicalwifs, phys, **params)  # iface assign
+
+    def load_module(self, n_radios, nodes, alt_module, **params):
         """Load WiFi Module
         :param n_radios: number of wifi radios
         :param alt_module: dir of a mac80211_hwsim alternative module"""
         debug('Loading %s virtual wifi interfaces\n' % n_radios)
-        if not cls.externally_managed:
+        if not self.externally_managed:
             if alt_module:
                 output_ = os.system('insmod %s radios=0 >/dev/null 2>&1'
                                     % alt_module)
@@ -38,7 +56,7 @@ class module(object):
             """output_ is different of zero in Kernel 3.13.x. radios=0 doesn't
              work in such kernel version"""
             if output_ == 0:
-                cls.__create_hwsim_mgmt_devices(n_radios, nodes, **params)
+                self.__create_hwsim_mgmt_devices(n_radios, nodes, **params)
             else:
                 # Useful for kernel <= 3.13.x
                 if n_radios == 0:
@@ -49,11 +67,10 @@ class module(object):
                 else:
                     os.system('modprobe mac80211_hwsim radios=%s' % n_radios)
         else:
-            cls.devices_created_dynamically = True
-            cls.__create_hwsim_mgmt_devices(n_radios, nodes, **params)
+            self.devices_created_dynamically = True
+            self.__create_hwsim_mgmt_devices(n_radios, nodes, **params)
 
-    @classmethod
-    def __create_hwsim_mgmt_devices(cls, n_radios, nodes, **params):
+    def __create_hwsim_mgmt_devices(self, n_radios, nodes, **params):
         # generate prefix
         if py_version_info < (3, 0):
             phys = subprocess.check_output("find /sys/kernel/debug/ieee80211 -name "
@@ -64,23 +81,24 @@ class module(object):
                                            "hwsim | cut -d/ -f 6 | sort",
                                            shell=True).decode('utf-8').split("\n")
         num = 0
+        hwsim_ids = []
         numokay = False
-        cls.prefix = ""
+        self.prefix = ""
         while not numokay:
-            cls.prefix = "mn%02ds" % num
+            self.prefix = "mn%02ds" % num
             numokay = True
             for phy in phys:
-                if phy.startswith(cls.prefix):
+                if phy.startswith(self.prefix):
                     num += 1
                     numokay = False
                     break
 
         if 'docker' in params:
-            cls.docker_config(n_radios=n_radios, nodes=nodes, num=num, **params)
+            self.docker_config(n_radios=n_radios, nodes=nodes, num=num, **params)
         else:
             try:
                 for i in range(0, n_radios):
-                    p = subprocess.Popen(["hwsim_mgmt", "-c", "-n", cls.prefix +
+                    p = subprocess.Popen(["hwsim_mgmt", "-c", "-n", self.prefix +
                                           ("%02d" % i)], stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.PIPE, bufsize=-1)
@@ -91,10 +109,10 @@ class module(object):
                         else:
                             m = re.search("ID (\d+)", output.decode())
                         debug("Created mac80211_hwsim device with ID %s\n" % m.group(1))
-                        cls.hwsim_ids.append(m.group(1))
+                        hwsim_ids.append(m.group(1))
                     else:
                         error("\nError on creating mac80211_hwsim device with name %s"
-                              % (cls.prefix + ("%02d" % i)))
+                              % (self.prefix + ("%02d" % i)))
                         error("\nOutput: %s" % output)
                         error("\nError: %s" % err_out)
             except:
@@ -153,44 +171,20 @@ class module(object):
 
         cls.kill_mac80211_hwsim()
 
-    @classmethod
-    def start(cls, nodes, n_radios, alt_module, **params):
-        """Starts environment
-
-        :param nodes: list of wireless nodes
-        :param n_radios: number of wifi radios
-        :param alt_module: dir of a mac80211_hwsim alternative module
-        :param **params: ifb -  Intermediate Functional Block device"""
-        try:
-            h = subprocess.check_output("ps -aux | grep -ic \'hostapd\'",
-                                        shell=True)
-            if h >= 2:
-                os.system('pkill -f \'hostapd\'')
-        except:
-            pass
-
-        physicalwifs = cls.get_physical_wif()  # Gets Physical wif(s)
-        cls.load_module(n_radios, nodes, alt_module, **params)  # Initatilize WiFi Module
-        phys = cls.get_phy()  # Get Phy Interfaces
-        module.assign_iface(nodes, physicalwifs, phys, **params)  # iface assign
-
-    @classmethod
-    def get_physical_wif(cls):
+    def get_physical_wif(self):
         'Gets the list of physical wifs that already exist'
-        cls.wifs = []
         if py_version_info < (3, 0):
-            cls.wifs = (subprocess.check_output("iw dev 2>&1 | grep Interface "
+            wifs = (subprocess.check_output("iw dev 2>&1 | grep Interface "
                                                  "| awk '{print $2}'",
                                                  shell=True)).split("\n")
         else:
-            cls.wifs = (subprocess.check_output("iw dev 2>&1 | grep Interface "
+            wifs = (subprocess.check_output("iw dev 2>&1 | grep Interface "
                                                  "| awk '{print $2}'",
                                                  shell=True)).decode('utf-8').split("\n")
-        cls.wifs.pop()
-        return cls.wifs
+        wifs.pop()
+        return wifs
 
-    @classmethod
-    def get_phy(cls):
+    def get_phy(self):
         'Gets all phys after starting the wireless module'
         if py_version_info < (3, 0):
             phy = subprocess.check_output("find /sys/kernel/debug/ieee80211 -name "
@@ -204,8 +198,7 @@ class module(object):
         phy.sort(key=len, reverse=False)
         return phy
 
-    @classmethod
-    def load_ifb(cls, wifs):
+    def load_ifb(self, wifs):
         """ Loads IFB
 
         :param wifs: Number of wireless interfaces
@@ -213,11 +206,10 @@ class module(object):
         debug('\nLoading IFB: modprobe ifb numifbs=%s' % wifs)
         os.system('modprobe ifb numifbs=%s' % wifs)
 
-    @classmethod
-    def docker_config(cls, n_radios=0, nodes=None, dir='~/',
+    def docker_config(self, n_radios=0, nodes=None, dir='~/',
                       ip='172.17.0.1', num=0, **params):
 
-        file = cls.prefix + 'docker_mn-wifi.sh'
+        file = self.prefix + 'docker_mn-wifi.sh'
         os.system('rm %s' % file)
         os.system("echo '#!/bin/bash' >> %s" % file)
         os.system("echo 'pid=$(sudo -S docker inspect -f '{{.State.Pid}}' "
@@ -235,9 +227,9 @@ class module(object):
 
         for radio in range(0, n_radios):
             os.system("echo 'sudo -S hwsim_mgmt -c -n %s%s' >> %s"
-                      % (cls.prefix, "%02d" % radio, file))
+                      % (self.prefix, "%02d" % radio, file))
             if radio in radios:
-                radio_id = cls.prefix + "%02d" % radio
+                radio_id = self.prefix + "%02d" % radio
                 phys_ = phys_ + radio_id + ' '
         os.system("echo 'nodes=(%s)' >> %s" % (nodes_, file))
         os.system("echo 'phys=(%s)' >> %s" % (phys_, file))
@@ -254,18 +246,18 @@ class module(object):
         os.system("ssh %s@%s \'chmod +x %s%s; %s%s\'"
                   % (params['ssh_user'], ip, dir, file, dir, file))
 
-    @classmethod
-    def assign_iface(cls, nodes, physicalwifs, phys, **params):
+    def assign_iface(self, nodes, physicalwifs, phys, **params):
         """Assign virtual interfaces for all nodes
 
         :param nodes: list of wireless nodes
         :param physicalwifs: list of Physical wifs
         :param phys: list of phys
         :param **params: ifb -  Intermediate Functional Block device"""
-        from mn_iot.mac80211.node import Station, Car
+        from mn_iot.mac80211.node import AP
+        from mn_iot.mac80211.link import IntfWireless
 
         log_filename = '/tmp/mn-wifi-mac80211_hwsim.log'
-        cls.logging_to_file("%s" % log_filename)
+        self.logging_to_file("%s" % log_filename)
 
         if 'ifb' in params:
             ifb = params['ifb']
@@ -273,23 +265,26 @@ class module(object):
             ifb = False
         try:
             if 'docker' in params:
+                wif_list = []
                 for phy in range(0, len(phys)):
-                    cls.wif_list.append('wlan%s' % phy)
+                    wif_list.append('wif%s' % phy)
             else:
-                cls.wif_list = cls.get_wif_iface(physicalwifs)
+                wif_list = self.get_wif_iface(physicalwifs)
             if ifb:
-                cls.load_ifb(len(cls.wif_list))
+                self.load_ifb(len(wif_list))
                 ifbID = 0
             debug("\n*** Configuring interfaces with appropriated network"
                   "-namespaces...\n")
+            phyID = 0
             for node in nodes:
-                if (isinstance(node, Station) or isinstance(node, Car)) \
-                        or 'inNamespace' in node.params:
-                    if ifb:
-                        node.ifb = []
-                    for wif in range(0, len(node.params['wif'])):
-                        node.phyID[wif] = cls.phyID
-                        cls.phyID += 1
+                if ifb:
+                    node.ifb = []
+                for wif in range(0, len(node.params['wif'])):
+                    node.phyID[wif] = phyID
+                    phyID += 1
+                    if isinstance(node, AP) and 'inNamespace' not in node.params:
+                        IntfWireless.rename(node, wif_list[0], node.params['wif'][wif])
+                    else:
                         if 'docker' not in params:
                             if py_version_info < (3, 0):
                                 rfkill = subprocess.check_output(
@@ -303,14 +298,14 @@ class module(object):
                             debug('rfkill unblock %s\n' % rfkill[0])
                             os.system('rfkill unblock %s' % rfkill[0])
                             os.system('iw phy %s set netns %s' % (phys[0], node.pid))
-                        node.cmd('ip link set %s down' % cls.wif_list[0])
+                        node.cmd('ip link set %s down' % wif_list[0])
                         node.cmd('ip link set %s name %s'
-                                 % (cls.wif_list[0], node.params['wif'][wif]))
+                                 % (wif_list[0], node.params['wif'][wif]))
                         if ifb:
                             node.ifbSupport(wif, ifbID)  # Adding Support to IFB
                             ifbID += 1
-                        cls.wif_list.pop(0)
-                        phys.pop(0)
+                    wif_list.pop(0)
+                    phys.pop(0)
         except:
             logging.exception("Warning:")
             info("Warning! Error when loading mac80211_hwsim. "
@@ -318,16 +313,14 @@ class module(object):
             info("Further information available at %s.\n" % log_filename)
             exit(1)
 
-    @classmethod
-    def logging_to_file(cls, filename):
+    def logging_to_file(self, filename):
         logging.basicConfig(filename=filename,
                             filemode='a',
                             level=logging.DEBUG,
                             format='%(asctime)s - %(levelname)s - %(message)s',
                            )
 
-    @classmethod
-    def get_wif_iface(cls, physicalwif):
+    def get_wif_iface(self, physicalwif):
         """Build a new wif list removing the physical wif
 
         :param physicalwifs: list of Physical wifs"""
@@ -343,7 +336,7 @@ class module(object):
                                                  "awk '{print $2}'",
                                                  shell=True).decode('utf-8').split('\n')
         for iface in iface_list:
-            if iface not in physicalwif and iface != '':
+            if iface and iface not in physicalwif:
                 wif_list.append(iface)
         wif_list = sorted(wif_list)
         wif_list.sort(key=len, reverse=False)
