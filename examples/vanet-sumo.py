@@ -7,16 +7,15 @@
 sumo
 sumo-gui"""
 
-import os
 
 from mininet.node import Controller
 from mininet.log import setLogLevel, info
 from mn_iot.mac80211.node import UserAP
 from mn_iot.mac80211.cli import CLI_wifi
 from mn_iot.mac80211.net import Mininet_wifi
-from mn_iot.mac80211.sumo.runner import sumo
 from mn_iot.mac80211.link import wmediumd, mesh
 from mn_iot.mac80211.wmediumdConnector import interference
+from mn_iot.sumo.runner import sumo
 
 
 def topology():

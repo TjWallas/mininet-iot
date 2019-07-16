@@ -4,7 +4,7 @@ from subprocess import check_output as co
 from sys import exit
 
 # Actually run bin/mn rather than importing via python path
-version = 'Mininet-IoT ' + co( 'PYTHONPATH=. bin/mn --iot --version 2>&1', shell=True )
+version = 'Mininet-IoT ' + co( 'PYTHONPATH=. bin/mn --sixlowpan --version 2>&1', shell=True )
 version = version.strip()
 
 # Find all Mininet-WiFi path references

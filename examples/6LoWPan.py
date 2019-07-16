@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 'This example creates a simple network topology with 3 sensors'
-import os
 import sys
 
 from mininet.log import setLogLevel, info
