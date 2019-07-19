@@ -12,6 +12,7 @@ from six import string_types
 
 from mininet.log import info, error, debug
 from mn_iot.mac80211.devices import GetRate
+from mn_iot.mac80211.adhocRoutingProtocols import adhocProtocols
 from mn_iot.mac80211.wmediumdConnector import DynamicWmediumdIntfRef, \
     w_starter, SNRLink, w_txpower, w_pos, \
     w_cst, w_server, ERRPROBLink, wmediumd_mode
@@ -1108,8 +1109,13 @@ class adhoc(IntfWireless):
             IntfWireless.setFreqParams(node, params['channel'], wif)
 
         self.configureAdhoc(node, wif, **params)
+
+        if 'proto' in params:
+            adhocProtocols(params['proto'], node, wif)
+
         if 'intf' not in params:
             node.ifaceToAssociate += 1
+
 
     def configureAdhoc(self, node, wif, **params):
         "Configure Wireless Ad Hoc"

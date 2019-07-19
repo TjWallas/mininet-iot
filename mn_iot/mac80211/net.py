@@ -34,7 +34,8 @@ from mn_iot.mac80211.link import wirelessLink, wmediumd, Association, \
     _4address, TCWirelessLink, TCLinkWirelessStation, ITSLink, \
     wifiDirectLink, adhoc, mesh, physicalMesh, physicalWifiDirectLink
 from mn_iot.mac80211.devices import GetRate, GetRange
-from mn_iot.mac80211.mobility import mobility as mob
+from mn_iot.mac80211.mobility import tracked as trackedMob, \
+    model as mobModel, mobility as mob
 from mn_iot.mac80211.plot import plot2d, plot3d, plotGraph
 from mn_iot.mac80211.module import module
 from mn_iot.mac80211.propagationModels import propagationModel
@@ -778,7 +779,7 @@ class Mininet_wifi(Mininet):
                 if self.sensors:
                     mobSensor.stop(**self.mob_param)
                 else:
-                    mob.stop(**self.mob_param)
+                    trackedMob(**self.mob_param)
         else:
             if self.DRAW and not self.isReplaying:
                 plotNodes = self.plot_nodes()
@@ -1651,7 +1652,7 @@ class Mininet_wifi(Mininet):
             kwargs['nodes'] = nodes
             self.setMobilityParams(**kwargs)
             if self.nroads == 0:
-                mob.start(**self.mob_param)
+                mobModel(**self.mob_param)
             else:
                 self.mob_param['cars'] = self.cars
                 vanet(**self.mob_param)
