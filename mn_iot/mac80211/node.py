@@ -575,7 +575,8 @@ class Node_wifi(Node):
 
         return self.intf(intf).setIP(ip, prefixLen, **kwargs)
 
-    def config(self, mac=None, ip=None, defaultRoute=None, lo='up', **_params):
+    def config(self, mac=None, ip=None, ipv6=None,
+               defaultRoute=None, lo='up', **_params):
         """Configure Node according to (optional) parameters:
            mac: MAC address for default interface
            ip: IP address for default interface
@@ -592,11 +593,17 @@ class Node_wifi(Node):
         if not isinstance(self, Station) and not isinstance(self, Car):
             self.setParam(r, 'setMAC', mac=mac)
         self.setParam(r, 'setIP', ip=ip)
+        self.setParam(r, 'setIPv6', ipv6=ipv6)
         self.setParam(r, 'setDefaultRoute', defaultRoute=defaultRoute)
 
         # This should be examined
         self.cmd('ip link set lo ' + lo)
         return r
+
+    def configDefault(self, **moreParams):
+        "Configure with default parameters"
+        self.params.update(moreParams)
+        self.config(**self.params)
 
     def __repr__(self):
         "More informative string representation"
@@ -872,7 +879,7 @@ class AP(Node_wifi):
             if py_version_info < (3, 0):
                 dpid = dpid.translate(None, ':')
             else:
-                dpid = dpid.translate(str.maketrans('', '', ':'))
+                dpid = dpid.replace( ':', '' )
             assert len(dpid) <= self.dpidLen and int(dpid, 16) >= 0
             return '0' * (self.dpidLen - len(dpid)) + dpid
         else:

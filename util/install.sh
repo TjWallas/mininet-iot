@@ -204,16 +204,30 @@ function wifi_deps {
     sudo make install
 }
 
+function babeld {
+    echo "Installing babeld..."
+
+    cd $BUILD_DIR/mininet-iot
+    if [ -d babeld ]; then
+          echo "Removing babeld..."
+          rm -r babeld
+        fi
+    git clone --depth=1 https://github.com/jech/babeld
+    cd $BUILD_DIR/mininet-iot/babeld
+    make
+    sudo make install
+}
+
 function olsrd {
     echo "Installing olsrd..."
 
-    cd $BUILD_DIR/mininet-wifi
+    cd $BUILD_DIR/mininet-iot
     if [ -d olsrd ]; then
           echo "Removing olsrd..."
           rm -r olsrd
         fi
     git clone --depth=1 https://github.com/OLSR/olsrd
-    cd $BUILD_DIR/mininet-wifi/olsrd
+    cd $BUILD_DIR/mininet-iot/olsrd
     make
     sudo make install
 }
@@ -829,6 +843,9 @@ function all {
     oftest
     cbench
     wmediumd
+    babeld
+    olsrd
+    batman
     wpan_tools
     echo "Enjoy Mininet-IoT!"
 }
@@ -867,7 +884,7 @@ function vm_clean {
 }
 
 function usage {
-    printf '\nUsage: %s [-abBcdfhiklmnOprtvVwxy03]\n\n' $(basename $0) >&2
+    printf '\nUsage: %s [-abBcdEfhiklmnOprtvVwxy03]\n\n' $(basename $0) >&2
 
     printf 'This install script attempts to install useful packages\n' >&2
     printf 'for Mininet. It should (hopefully) work on Ubuntu 11.10+\n' >&2
@@ -882,6 +899,7 @@ function usage {
     printf -- ' -c: (C)lean up after kernel install\n' >&2
     printf -- ' -d: (D)elete some sensitive files from a VM image\n' >&2
     printf -- ' -e: install Mininet d(E)veloper dependencies\n' >&2
+    printf -- ' -E: install babeld\n' >&2
     printf -- ' -f: install Open(F)low\n' >&2
     printf -- ' -h: print this (H)elp message\n' >&2
     printf -- ' -i: install (I)ndigo Virtual Switch\n' >&2
@@ -912,7 +930,7 @@ if [ $# -eq 0 ]
 then
     all
 else
-    while getopts 'abBcdefhiklmnOpPrs:tvV:wWxy036' OPTION
+    while getopts 'abBcdeEfhiklmnOpPrs:tvV:wWxy036' OPTION
     do
       case $OPTION in
       a)    all;;
@@ -921,6 +939,7 @@ else
       c)    kernel_clean;;
       d)    vm_clean;;
       e)    mn_dev;;
+      E)    babeld;;
       f)    case $OF_VERSION in
             1.0) of;;
             1.3) of13;;
