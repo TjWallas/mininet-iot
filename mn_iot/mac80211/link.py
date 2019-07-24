@@ -1119,10 +1119,7 @@ class adhoc(IntfWireless):
 
     def configureAdhoc(self, node, wif, **params):
         "Configure Wireless Ad Hoc"
-        iface = node.params['wif'][wif]
-        ip = node.params['ip'][wif]
         node.func[wif] = 'adhoc'
-        node.setIP(ip, intf='%s' % iface)
         self.setType('ibss')
         self.ipLink('up')
 
