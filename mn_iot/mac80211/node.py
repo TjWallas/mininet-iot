@@ -877,9 +877,9 @@ class AP(Node_wifi):
         if dpid:
             # Remove any colons and make sure it's a good hex number
             if py_version_info < (3, 0):
-                dpid = dpid.translate(None, ':')
+                dpid = dpid.replace(':', '')
             else:
-                dpid = dpid.replace( ':', '' )
+                dpid = dpid.translate(str.maketrans('', '', ':'))
             assert len(dpid) <= self.dpidLen and int(dpid, 16) >= 0
             return '0' * (self.dpidLen - len(dpid)) + dpid
         else:
