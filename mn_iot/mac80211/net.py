@@ -626,7 +626,7 @@ class Mininet_wifi(Mininet):
 
     def configHosts(self):
         "Configure a set of nodes."
-        hosts = self.hosts + self.stations + self.cars
+        hosts = self.hosts
         for host in hosts:
             # info( host.name + ' ' )
             intf = host.defaultIntf()
@@ -907,7 +907,7 @@ class Mininet_wifi(Mininet):
             info(node.name + ' ')
             node.terminate()
         info('\n')
-        if self.aps is not []:
+        if self.aps:
             self.kill_hostapd()
         self.closeMininetWiFi()
         if self.sensors or self.l2Sensors:
@@ -1816,6 +1816,14 @@ class Mininet_wifi(Mininet):
                     node.setAntennaGain(node.params['antennaGain'][wif],
                                         intf=node.params['wif'][wif],
                                         setParam=setParam)
+
+        nodes = self.stations + self.cars
+        for node in nodes:
+            intf = node.defaultIntf()
+            if intf:
+                node.configDefault()
+            else:
+                node.configDefault(ip=None, mac=None)
 
         return self.stations, self.aps
 
