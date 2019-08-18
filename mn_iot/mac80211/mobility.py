@@ -24,20 +24,20 @@ class mobility(object):
     rec_rssi = False
     allAutoAssociation = True
     thread_ = ''
+    end_time = 0
 
     @classmethod
     def move_factor(cls, node, diff_time):
         """:param node: node
-        :param diff_time: difference between initial and final time. Useful for
-        calculating the speed"""
+        :param diff_time: difference between initial and final time.
+        Useful for calculating the speed"""
         init_pos = (node.params['initPos'])
         fin_pos = (node.params['finPos'])
 
         if hasattr(node, 'points'):
-            diff_time = (len(node.points)-1) / diff_time
-            node.moveFac = diff_time
+            pos = (len(node.points) - 1) / diff_time
         else:
-            diff_time = diff_time + 1
+            diff_time += 1
             node.params['position'] = init_pos
             pos_x = float(fin_pos[0]) - float(init_pos[0])
             pos_y = float(fin_pos[1]) - float(init_pos[1])
@@ -47,7 +47,7 @@ class mobility(object):
             pos = round(pos_x / diff_time,2),\
                   round(pos_y / diff_time,2),\
                   round(pos_z / diff_time,2)
-            node.moveFac = pos
+        return pos
 
     @classmethod
     def configure(cls, *args, **kwargs):
@@ -72,14 +72,16 @@ class mobility(object):
         if stage == 'start':
             node.startTime = kwargs['time']
         elif stage == 'stop':
+            node.speed = 1
             cls.calculate_diff_time(node, kwargs['time'])
 
     @classmethod
     def calculate_diff_time(cls, node, time=0):
         if time != 0:
             node.endTime = time
+            node.endT = time
         diff_time = node.endTime - node.startTime
-        cls.move_factor(node, diff_time)
+        node.moveFac = cls.move_factor(node, diff_time)
 
     @classmethod
     def set_pos(cls, node, pos):
@@ -162,7 +164,7 @@ class mobility(object):
             if sta not in ap.params['assocStas']:
                 ap.params['assocStas'].append(sta)
             if dist >= 0.01:
-                if Association.bgscan or 'active_scan' in sta.params \
+                if 'bgscan_threshold' in sta.params or 'active_scan' in sta.params \
                 and ('encrypt' in sta.params and 'wpa' in sta.params['encrypt'][wif]):
                     pass
                 elif cls.wmediumd_mode and cls.wmediumd_mode != 3:
@@ -242,12 +244,12 @@ class mobility(object):
                         for ap_wif in range(len(ap.params['wif'])):
                             if ap.func[ap_wif] != 'mesh' and ap.func[ap_wif] != 'adhoc':
                                 if cls.wmediumd_mode == 3:
-                                    if Association.bgscan or ('active_scan' in node.params \
+                                    if 'bgscan_threshold' in node.params or ('active_scan' in node.params \
                                     and ('encrypt' in node.params and 'wpa' in node.params['encrypt'][wif])):
                                         if node.params['associatedTo'][wif] == '':
                                             Association.associate_infra(node, ap, wif=wif,
                                                                         ap_wif=ap_wif)
-                                            if Association.bgscan:
+                                            if 'bgscan_threshold' in node.params:
                                                 node.params['associatedTo'][wif] = 'bgscan'
                                             else:
                                                 node.params['associatedTo'][wif] = 'active_scan'
@@ -380,6 +382,7 @@ class tracked(mobility):
     "Used when the position of each node is previously defined"
 
     def __init__(self, **kwargs):
+        mobility.end_time = kwargs['final_time']
         self.start_thread(**kwargs)
 
     def start_thread(self, **kwargs):
@@ -440,20 +443,17 @@ class tracked(mobility):
             i = 1
             if 'reverse' in kwargs and kwargs['reverse']:
                 for node in mobility.mobileNodes:
-                    if rep%2 == 1:
-                        fin_ = node.params['finPos']
-                        node.params['finPos'] = node.params['initPos']
-                        node.params['initPos'] = fin_
-                    elif rep%2 == 0 and rep > 0:
+                    if rep % 2 == 1 or (rep % 2 == 0 and rep > 0):
                         fin_ = node.params['finPos']
                         node.params['finPos'] = node.params['initPos']
                         node.params['initPos'] = fin_
             for node in mobility.mobileNodes:
+                node.matrix_pos = 0
                 node.time = node.startTime
                 mobility.calculate_diff_time(node)
             while cont:
                 t2 = time()
-                if (t2 - t1) > kwargs['final_time']:
+                if (t2 - t1) > mobility.end_time:
                     cont = False
                     if rep == kwargs['repetitions']:
                         mobility.thread_._keep_alive = False
@@ -463,11 +463,13 @@ class tracked(mobility):
                             if (t2 - t1) >= node.startTime and node.time <= node.endTime:
                                 if hasattr(node, 'coord'):
                                     mobility.calculate_diff_time(node)
-                                    mobility.set_pos(node,
-                                                 node.points[node.time * node.moveFac])
+                                    node.matrix_pos += node.moveFac
+                                    if node.matrix_pos < len(node.points):
+                                        mobility.set_pos(node,
+                                                         node.points[node.matrix_pos])
                                     if node.time == node.endTime:
                                         mobility.set_pos(node,
-                                                     node.points[len(node.points) - 1])
+                                                         node.points[len(node.points) - 1])
                                 else:
                                     mobility.set_pos(node, self.move_node(node))
                                 node.time += 1

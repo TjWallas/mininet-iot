@@ -167,6 +167,9 @@ class Mininet_wifi(Mininet):
 
         Mininet_wifi.init()  # Initialize Mininet if necessary
 
+        if autoSetPositions and link == wmediumd:
+            self.wmediumd_mode = interference
+
         if self.rec_rssi:
             mob.rec_rssi = True
 
@@ -681,20 +684,39 @@ class Mininet_wifi(Mininet):
                 else:
                     self.addController('c%d' % i, cls)
 
-        info('*** Adding stations:\n')
-        for staName in topo.stations():
-            self.addStation(staName, **topo.nodeInfo(staName))
-            info(staName + ' ')
+        if topo.stations():
+            info('*** Adding stations:\n')
+            for staName in topo.stations():
+                self.addStation(staName, **topo.nodeInfo(staName))
+                info(staName + ' ')
 
-        info('\n*** Adding access points:\n')
-        for apName in topo.aps():
-            # A bit ugly: add batch parameter if appropriate
-            params = topo.nodeInfo(apName)
-            cls = params.get('cls', self.accessPoint)
-            if hasattr(cls, 'batchStartup'):
-                params.setdefault('batch', True)
-            self.addAccessPoint(apName, **params)
-            info(apName + ' ')
+        if topo.hosts():
+            info('*** Adding hosts:\n')
+            for hostName in topo.hosts():
+                self.addHost(hostName, **topo.nodeInfo(hostName))
+                info(hostName + ' ')
+
+        if topo.aps():
+            info('\n*** Adding access points:\n')
+            for apName in topo.aps():
+                # A bit ugly: add batch parameter if appropriate
+                params = topo.nodeInfo(apName)
+                cls = params.get('cls', self.accessPoint)
+                if hasattr(cls, 'batchStartup'):
+                    params.setdefault('batch', True)
+                self.addAccessPoint(apName, **params)
+                info(apName + ' ')
+
+        if topo.switches():
+            info('\n*** Adding switches:\n')
+            for switchName in topo.switches():
+                # A bit ugly: add batch parameter if appropriate
+                params = topo.nodeInfo(switchName)
+                cls = params.get('cls', self.switch)
+                if hasattr(cls, 'batchStartup'):
+                    params.setdefault('batch', True)
+                self.addSwitch(switchName, **params)
+                info(switchName + ' ')
 
         info('\n*** Configuring wifi nodes...\n')
         self.configureWifiNodes()
@@ -756,8 +778,7 @@ class Mininet_wifi(Mininet):
         if self.autoStaticArp:
             self.staticArp()
 
-        nodes = self.stations
-        for node in nodes:
+        for node in self.stations:
             for wif in range(0, len(node.params['wif'])):
                 if not isinstance(node, AP) and node.func[0] != 'ap' and \
                         node.func[wif] != 'mesh' and \
@@ -1273,25 +1294,6 @@ class Mininet_wifi(Mininet):
             if 'position' not in node.params:
                 nodes_.append(node)
         return nodes_
-
-    @staticmethod
-    def setBgscan(module='simple', s_inverval=30, signal=-45,
-                  l_interval=300,
-                  database='/etc/wpa_supplicant/network1.bgscan'):
-        """Set Background scanning
-        :params module: module
-        :params s_inverval: short bgscan interval in second
-        :params signal: signal strength threshold
-        :params l_interval: long interval
-        :params database: database file name"""
-        if module is 'simple':
-            bgscan = 'bgscan=\"%s:%d:%d:%d\"' % \
-                     (module, s_inverval, signal, l_interval)
-        else:
-            bgscan = 'bgscan=\"%s:%d:%d:%d:%s\"' % \
-                     (module, s_inverval, signal, l_interval, database)
-
-        Association.bgscan = bgscan
 
     def setPropagationModel(self, **kwargs):
         "Set Propagation Model"
