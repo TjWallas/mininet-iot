@@ -1767,11 +1767,10 @@ class Mininet_wifi(Mininet):
                      propagationModel, self.wmediumdMac)
 
     def init_wmediumd(self):
-        if (self.configure4addr or self.configureWiFiDirect
-            or self.wmediumd_mode == error_prob) and self.link == wmediumd:
+        if (self.configure4addr or self.configureWiFiDirect or self.wmediumd_mode == error_prob) and self.link == wmediumd:
             wmediumd(self.fading_coefficient, self.noise_threshold,
-                     self.stations, self.aps, self.cars, propagationModel,
-                     self.wmediumdMac)
+                     self.stations, self.aps, self.cars, self.sensors,
+                     propagationModel, self.wmediumdMac)
             for sta in self.stations:
                 if self.wmediumd_mode != error_prob:
                     sta.set_pos_wmediumd(sta.params['position'])
