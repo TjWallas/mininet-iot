@@ -133,15 +133,16 @@ class mobility(object):
                 Association.setSNRWmediumd(sta, ap, snr=-10)
                 sta.params['rssi'][wif] = 0
             if 'ieee80211r' not in ap.params:
-                debug('iw dev %s disconnect\n' % sta.params['wif'][wif])
-                sta.pexec('iw dev %s disconnect' % sta.params['wif'][wif])
-        sta.params['associatedTo'][wif] = ''
-        sta.params['channel'][wif] = 0
-        if sta in ap.params['assocStas']:
-            ap.params['assocStas'].remove(sta)
-        if ap in sta.params['apsInRange']:
-            sta.params['apsInRange'].remove(ap)
-            ap.params['stasInRange'].pop(sta, None)
+                Association.disconnect(sta, sta.params['wif'][wif])
+            sta.params['associatedTo'][wif] = ''
+            sta.params['channel'][wif] = 0
+            if sta in ap.params['assocStas']:
+                ap.params['assocStas'].remove(sta)
+            if ap in sta.params['apsInRange']:
+                sta.params['apsInRange'].pop(ap, None)
+                ap.params['stasInRange'].pop(sta, None)
+        elif not sta.params['associatedTo'][wif]:
+            sta.params['rssi'][wif] = 0
 
     @classmethod
     def ap_in_range(cls, sta, ap, wif, dist):
@@ -151,9 +152,8 @@ class mobility(object):
         :param ap: access point
         :param wif: wif ID
         :param dist: distance between source and destination"""
-        if ap not in sta.params['apsInRange']:
-            sta.params['apsInRange'].append(ap)
         rssi = sta.get_rssi(ap, wif, dist)
+        sta.params['apsInRange'][ap] = rssi
         ap.params['stasInRange'][sta] = rssi
         if ap == sta.params['associatedTo'][wif]:
             if cls.rec_rssi:
@@ -167,15 +167,12 @@ class mobility(object):
                 if 'bgscan_threshold' in sta.params or 'active_scan' in sta.params \
                 and ('encrypt' in sta.params and 'wpa' in sta.params['encrypt'][wif]):
                     pass
-                elif cls.wmediumd_mode and cls.wmediumd_mode != 3:
-                    sta.params['rssi'][wif] = rssi
-                    Association.setSNRWmediumd(
-                        sta, ap, snr=sta.params['rssi'][wif] - (-91))
-                elif cls.wmediumd_mode == 3:
-                    pass
                 else:
-                    sta.params['rssi'][wif] = rssi
-                    wirelessLink(sta, ap, dist, wif=wif, ap_wif=0)
+                    if cls.wmediumd_mode and cls.wmediumd_mode != 3:
+                        Association.setSNRWmediumd(
+                            sta, ap, snr=sta.params['rssi'][wif] - (-91))
+                    else:
+                        wirelessLink(sta, ap, dist, wif=wif, ap_wif=0)
 
     @classmethod
     def check_association(cls, sta, wif, ap_wif):

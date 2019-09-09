@@ -145,8 +145,8 @@ class Node_wifi(Node):
         self.params['driver'] = 'nl80211'
         self.params['assocStas'] = []
         self.params['stasInRange'] = {}
+        self.params['apsInRange'] = {}
         self.params.pop('rssi', None)
-        self.params.pop('apsInRange', None)
         self.params.pop('associatedTo', None)
 
         for kwarg in kwargs:
@@ -469,20 +469,6 @@ class Node_wifi(Node):
         dist = pdist(points)
         return round(dist,2)
 
-    def associateTo(self, ap, intf=None):
-        "Force association to given AP"
-        if 'position' not in self.params:
-            wif = self.get_wif(intf)
-            if 'encrypt' in ap.params:
-                if 'wpa' in ap.params['encrypt'][0]:
-                    Association.wpa(self, ap, wif, ap_wif=0)
-                elif ap.params['encrypt'][0] == 'wep':
-                    Association.wep(self, ap, wif, ap_wif=0)
-            else:
-                Association.associate_noEncrypt(self, ap, wif, ap_wif=0)
-        else:
-            self.setAssociation(ap, intf)
-
     def setAssociation(self, ap, intf=None):
         "Force association to given AP"
         wif = self.params['wif'].index(intf)
@@ -493,26 +479,16 @@ class Node_wifi(Node):
 
         if dist < ap.params['range'][wif] or dist == 100000:
             if self.params['associatedTo'][wif] != ap:
-                if self.params['associatedTo'][wif] != '':
-                    self.cmd('iw dev %s disconnect' % intf)
-                if 'encrypt' not in ap.params:
-                    self.cmd('iw dev %s connect %s %s' %
-                            (self.params['wif'][wif], ap.params['ssid'][0],
-                             ap.params['mac'][0]))
-                    debug ('%s is now associated with %s\n' % (self, ap))
-                else:
-                    if ap.params['encrypt'][0] == 'wpa' or \
-                                    ap.params['encrypt'][0] == 'wpa2':
-                        Association.wpa(self, ap, wif, ap_wif=0)
-                    elif ap.params['encrypt'][0] == 'wep':
-                        Association.wep(self, ap, wif, ap_wif=0)
-                Association.update(self, ap, wif)
+                if self.params['associatedTo'][wif]:
+                    Association.disconnect(self, intf)
+                    node.params['rssi'][0] = 0
+                Association.associate_infra(self, ap, **params)
                 wirelessLink(self, ap, wif, 0, dist)
             else:
                 info ('%s is already connected!\n' % ap)
             self.configLinks()
         else:
-            info("%s is out of range!" % (ap))
+            info("%s is out of range!\n" % (ap))
 
     def newWpanPort(self):
         "Return the next port number to allocate."
