@@ -958,7 +958,7 @@ class AccessPoint(AP):
             ap.params['driver'] = driver
             for wif in range(len(ap.params['wif'])):
                 if not setMaster:
-                    cls.configAP(ap, wif)
+                    self.configAP(ap, wif)
                 if 'vssids' in ap.params:
                     break
         self.restartNetworkManager()
@@ -1267,7 +1267,7 @@ class AccessPoint(AP):
         unmatch = ""
         if os.path.exists('/etc/%s/%s.conf' % (nm, nm)):
             if os.path.isfile('/etc/%s/%s.conf' % (nm, nm)):
-                cls.resultIface = open('/etc/%s/%s.conf' % (nm, nm))
+                self.resultIface = open('/etc/%s/%s.conf' % (nm, nm))
                 lines = self.resultIface
 
             isNew = True
