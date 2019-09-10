@@ -391,6 +391,7 @@ class GetPowerGivenRange(object):
         a short distance)"""
         gt = kwargs['node'].params['antennaGain'][kwargs['wif']]
         ht = kwargs['node'].params['antennaHeight'][kwargs['wif']]
+        pt = kwargs['node'].params['txpower'][kwargs['wif']]
         gains = pt + gt
 
         d = kwargs['dist']
