@@ -1398,7 +1398,7 @@ class Association(IntfWireless):
         sta.params['rssi'][wif] = rssi
         if ap not in sta.params['apsInRange']:
             sta.params['apsInRange'][ap] = rssi
-            ap.params['stationsInRange'][sta] = rssi
+            ap.params['stasInRange'][sta] = rssi
 
     @classmethod
     def updateParams(cls, sta, ap, wif):
