@@ -1552,9 +1552,9 @@ class Association(IntfWireless):
         :param ap: access point
         :param wif: wif ID"""
         pidfile = "mn%d_%s_%s_wpa.pid" % (os.getpid(), sta.name, wif)
-        intf = sta.params['wlan'][wlan]
+        intf = sta.params['wif'][wif]
         cls.wpaFile(sta, ap, wif, ap_wif)
-        sta.wpa_cmd(pidfile, intf, wlan)
+        sta.wpa_cmd(pidfile, intf, wif)
 
     @classmethod
     def handover_ieee80211r(cls, sta, ap, wif, ap_wif):
