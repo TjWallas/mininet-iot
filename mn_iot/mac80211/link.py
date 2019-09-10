@@ -1390,10 +1390,10 @@ class Association(IntfWireless):
                 if sta not in ap.params['assocStas']:
                     ap.params['assocStas'].append(sta)
             if not enable_interference:
-                cls.setRSSI(sta, ap, wif)
+                cls.setRSSI(sta, ap, wif, dist)
 
     @classmethod
-    def setRSSI(cls, sta, ap, wif):
+    def setRSSI(cls, sta, ap, wif, dist):
         rssi = sta.get_rssi(ap, wif, dist)
         sta.params['rssi'][wif] = rssi
         if ap not in sta.params['apsInRange']:
