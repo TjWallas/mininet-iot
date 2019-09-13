@@ -133,11 +133,11 @@ class mobility(object):
 
     @classmethod
     def remove_assoc_from_params(cls, sta, ap):
-        if sta in ap.params['associatedStations']:
-            ap.params['associatedStations'].remove(sta)
+        if sta in ap.params['assocStas']:
+            ap.params['assocStas'].remove(sta)
         if ap in sta.params['apsInRange']:
             sta.params['apsInRange'].pop(ap, None)
-            ap.params['stationsInRange'].pop(sta, None)
+            ap.params['stasInRange'].pop(sta, None)
 
     @classmethod
     def ap_out_of_range(cls, sta, ap, wif, ap_wif):
