@@ -1302,7 +1302,6 @@ class Mininet_wifi(Mininet):
         self.propagation_model(**kwargs)
 
     def configWirelessLinkStatus(self, src, dst, status):
-
         sta = self.nameToNode[dst]
         ap = self.nameToNode[src]
         if isinstance(self.nameToNode[src], Station):
@@ -1312,8 +1311,7 @@ class Mininet_wifi(Mininet):
         if status == 'down':
             for wif in range(0, len(sta.params['wif'])):
                 if sta.params['associatedTo'][wif]:
-                    sta.cmd('iw dev %s disconnect' % sta.params['wif'][wif])
-                    sta.params['associatedTo'][wif] = ''
+                    Association.disconnect(sta, wif)
                     ap.params['assocStas'].remove(sta)
         else:
             for wif in range(0, len(sta.params['wif'])):
