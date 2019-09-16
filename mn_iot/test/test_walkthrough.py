@@ -397,12 +397,8 @@ class testWalkthrough(unittest.TestCase):
 
     def testEAP(self):
         "Start Mininet-WiFi using EAP-TLS, then test ping"
-        pexpect.spawn(
-            'cd /examples/eap-tls/CA')
-        pexpect.spawn(
-            './gencerts.sh')
-        pexpect.spawn(
-            'cd ../../../')
+        hw = '/examples/eap-tls/CA/gencerts.sh'
+        pexpect.spawn(hw, cwd=os.path.dirname(hw))
         p = pexpect.spawn(
             'python examples/eap-tls/eap-tls-auth.py')
         sleep(5)
