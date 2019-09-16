@@ -1502,7 +1502,10 @@ class Association(IntfWireless):
                 else:
                     passwd = sta.params['passwd'][wif]
 
-        cmd = 'ctrl_interface=/var/run/wpa_supplicant\nnetwork={\n'
+        cmd = 'ctrl_interface=/var/run/wpa_supplicant\n'
+        if 'wpasup_globals' in sta.params:
+            cmd += sta.params['wpasup_globals'] + '\n'
+        cmd += 'network={\n'
 
         if 'config' in sta.params:
             config = sta.params['config']
@@ -1562,8 +1565,6 @@ class Association(IntfWireless):
 
     @classmethod
     def handover_ieee80211r(cls, sta, ap, wif, ap_wif):
-        debug('wpa_cli -i %s roam %s\n' % (sta.params['wif'][wif],
-                                           ap.params['mac'][ap_wif]))
         sta.pexec('wpa_cli -i %s roam %s' % (sta.params['wif'][wif],
                                              ap.params['mac'][ap_wif]))
 

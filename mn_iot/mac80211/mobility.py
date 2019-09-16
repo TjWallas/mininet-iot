@@ -36,6 +36,8 @@ class mobility(object):
 
         if hasattr(node, 'points'):
             pos = (len(node.points) - 1) / diff_time
+            if pos <= 0:
+                pos = 1
         else:
             diff_time += 1
             node.params['position'] = init_pos
