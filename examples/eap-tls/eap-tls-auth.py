@@ -3,8 +3,8 @@
 'This example shows how to work with authentication'
 
 from mininet.log import setLogLevel, info
-from mn_wifi.cli import CLI_wifi
-from mn_wifi.net import Mininet_wifi
+from mn_iot.mac80211.cli import CLI_wifi
+from mn_iot.mac80211.net import Mininet_wifi
 import os.path
 import os
 from os import path
@@ -44,11 +44,11 @@ def topology():
                                  'private_key="{}/examples/eap-tls/CA/client.key"'
                           .format(cwd, cwd, cwd))
 
-    ap1 = net.addAccessPoint('ap1', 
-                            ssid="simplewifi", 
+    ap1 = net.addAccessPoint('ap1',
+                            ssid="simplewifi",
                             hostapd_flags='-dd > /tmp/hostapd.txt',
-                            mode="g", channel="1", 
-                            failMode="standalone", datapath='user', 
+                            mode="g", channel="1",
+                            failMode="standalone", datapath='user',
                             config='eap_server=1,'
                                    'ieee8021x=1,'
                                    'wpa=2,'
