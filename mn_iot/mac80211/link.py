@@ -60,24 +60,22 @@ class IntfWireless(object):
         "Run a command in our owning node"
         return self.node.pexec(*args, **kwargs)
 
-    def join(self, type=None, ssid=None, freq=None, ht_cap=None, intf=None):
-        if type == 'ibss':
-            return self.pexec('iw dev %s %s join %s %s %s 02:CA:FF:EE:BA:01'
-                              % (self.name, type, ssid, freq, ht_cap))
-        elif type == 'mesh':
-            return self.pexec('iw dev %s %s join %s freq %s %s'
-                            % (intf, type, ssid, freq, ht_cap))
+    def iwdev_cmd(self, *args):
+        return self.cmd('iw dev', *args)
 
-    def setType(self, type=None, intf=None):
-        if intf:
-            return self.cmd('iw dev %s interface add %s type %s'
-                            % (intf, self.name, type))
-        else:
-            return self.cmd('iw dev %s set type %s'
-                            % (self.name, type))
+    def iwdev_pexec(self, *args):
+        return self.pexec('iw dev', *args)
+
+    def join_ibss(self, ssid, freq, ht_cap):
+        return self.iwdev_cmd('{} ibss join {} {} {} 02:CA:FF:EE:BA:01'.
+                              format(self.name, ssid, freq, ht_cap))
+
+    def join_mesh(self, ssid, freq, ht_cap, intf):
+        return self.iwdev_cmd('{} mesh join {} freq {} {}'.
+                              format(intf, ssid, freq, ht_cap))
 
     def setFreq(self, freq, intf=None):
-        return self.cmd('iw dev %s set freq %s' % (intf, freq))
+        return self.iwdev_cmd('{} set freq {}' % (intf, freq))
 
     def get_freq(self, freq):
         return format(freq, '.3f').replace('.', '')
@@ -103,8 +101,9 @@ class IntfWireless(object):
                     self.name, str(params['channel']),
                     str(self.node.params['freq'][wif]).replace(".", "")))
         else:
-            self.cmd('iw dev %s set channel %s'
-                     % (self.node.params['wif'][wif], str(params['channel'])))
+            self.iwdev_cmd('%s set channel %s'
+                           % (self.node.params['wif'][wif],
+                              str(params['channel'])))
 
     def ipAddr(self, *args):
         "Configure ourselves using ip link/addr"
@@ -475,7 +474,9 @@ class TCWirelessLink(IntfWireless):
         return result
 
 
-class _4address(object):
+class _4address(IntfWireless):
+
+    node = None
 
     def __init__(self, node1, node2, port1=None, port2=None):
         """Create 4addr link to another node.
@@ -484,7 +485,6 @@ class _4address(object):
            intf: default interface class/constructor"""
         intf1 = None
         intf2 = None
-        cls = IntfWireless
 
         ap = node1 # ap
         cl = node2 # client
@@ -513,11 +513,12 @@ class _4address(object):
             else:
                 apwif = 0
 
-            self.add4addrIface(cl, wif, cl_intfName)
+            self.node = cl
+            self.add4addrIface(wif, cl_intfName)
             cl.params['mac'].append(cl.params['mac'][wif][:3] +
                                     '09' + cl.params['mac'][wif][5:])
-            self.setMAC(cl, wif)
-            self.bring4addrIfaceUP(cl)
+            self.setMAC(wif)
+            self.bring4addrIfaceUP()
             cl.func.append('client')
             ap.func.append('ap')
 
@@ -528,39 +529,37 @@ class _4address(object):
             cl.params['antennaGain'].append(cl.params['antennaGain'][apwif])
             cl.params['wif'].append(cl_intfName)
             sleep(1)
-            cl.cmd('iw dev %s connect %s %s' % (cl.params['wif'][1],
-                   ap.params['ssid'][apwif], ap.params['mac'][apwif]))
+            self.iwdev_cmd('%s connect %s %s' % (cl.params['wif'][1],
+                                                 ap.params['ssid'][apwif],
+                                                 ap.params['mac'][apwif]))
 
             params1 = {}
             params2 = {}
-            params1[ 'port' ] = cl.newPort()
-            params2[ 'port' ] = ap.newPort()
-            intf1 = cls(name=cl_intfName, node=cl, link=self, **params1)
+            params1['port'] = cl.newPort()
+            params2['port'] = ap.newPort()
+            intf1 = IntfWireless(name=cl_intfName, node=cl, link=self, **params1)
             if hasattr(ap, 'wds'):
                 ap.wds += 1
             else:
                 ap.wds = 1
             intfName2 = ap.params['wif'][apwif] + '.sta%s' % ap.wds
-            intf2 = cls(name=intfName2, node=ap, link=self, **params2)
+            intf2 = IntfWireless(name=intfName2, node=ap, link=self, **params2)
             ap.params['wif'].append(intfName2)
 
         # All we are is dust in the wind, and our two interfaces
         self.intf1, self.intf2 = intf1, intf2
 
-    @classmethod
-    def bring4addrIfaceUP(cls, node):
-        node.cmd('ip link set dev %s.wds up' % node.name)
+    def bring4addrIfaceUP(self):
+        self.cmd('ip link set dev %s.wds up' % self.node)
 
-    @classmethod
-    def setMAC(cls, node, wif):
-        nif = len(node.params['mac'])-1
-        node.cmd('ip link set dev %s.wds addr %s'
-                 % (node.name, node.params['mac'][wif+nif]))
+    def setMAC(self, wif):
+        nif = len(self.node.params['mac']) - 1
+        self.cmd('ip link set dev %s.wds addr %s'
+                 % (self.node, self.node.params['mac'][wif + nif]))
 
-    @classmethod
-    def add4addrIface(cls, node, wif, intfName):
-        node.cmd('iw dev %s interface add %s type managed 4addr on'
-                 % (node.params['wif'][wif], intfName))
+    def add4addrIface(self, wif, intfName):
+        self.iwdev_cmd('%s interface add %s type managed 4addr on' %
+                       (self.node.params['wif'][wif], intfName))
 
     def status(self):
         "Return link status as a string"
@@ -927,24 +926,20 @@ class wirelessLink (object):
         bw_ = self.getBW(sta=sta, ap=ap, dist=dist, **params)
         self.config_tc(sta, wif, bw_, loss_, latency_)
 
-    @classmethod
-    def getDelay(cls, dist):
+    def getDelay(self, dist):
         "Based on RandomPropagationDelayModel"
-        return eval(cls.equationDelay)
+        return eval(self.equationDelay)
 
-    @classmethod
-    def getLatency(cls, dist):
-        return eval(cls.equationLatency)
+    def getLatency(self, dist):
+        return eval(self.equationLatency)
 
-    @classmethod
-    def getLoss(cls, dist):
-        return eval(cls.equationLoss)
+    def getLoss(self, dist):
+        return eval(self.equationLoss)
 
-    @classmethod
-    def getBW(cls, sta=None, ap=None, dist=0, **params):
+    def getBW(self, sta=None, ap=None, dist=0, **params):
         value = GetRate(sta=sta, ap=ap, **params)
         custombw = value.rate
-        rate = eval(str(custombw) + cls.equationBw)
+        rate = eval(str(custombw) + self.equationBw)
 
         if rate <= 0.0:
             rate = 0.1
@@ -1091,14 +1086,13 @@ class adhoc(IntfWireless):
         node: name of the node
         self: custom association class/constructor
         params: parameters for station"""
-        self.name = ''
         self.node = node
         if 'intf' in params:
             for intf_ in node.params['wif']:
                 if params['intf'] == intf_:
                     wif = node.params['wif'].index(intf_)
                     if 'mp' in intf_:
-                        node.pexec('iw dev %s del' % node.params['wif'][wif])
+                        self.iwdev_cmd('%s del' % node.params['wif'][wif])
                         node.params['wif'][wif] = intf_.replace('mp', 'wif')
         else:
             wif = node.ifaceToAssociate
@@ -1138,7 +1132,7 @@ class adhoc(IntfWireless):
     def configureAdhoc(self, node, wif, **params):
         "Configure Wireless Ad Hoc"
         node.func[wif] = 'adhoc'
-        self.setType('ibss')
+        self.iwdev_cmd('%s set type ibss' % self.name)
         self.ipLink('up')
 
         if 'passwd' in params:
@@ -1149,7 +1143,7 @@ class adhoc(IntfWireless):
             ht_cap = ''
             if 'ht_cap' in params:
                 ht_cap = params['ht_cap']
-            self.join('ibss', ssid, freq, ht_cap)
+            self.join_ibss(ssid, freq, ht_cap)
 
     def setSecuredAdhoc(self, node, wif, **params):
         "Set secured adhoc"
@@ -1217,12 +1211,13 @@ class mesh(IntfWireless):
         wif = node.params['wif'].index(self.name)
         intf = node.params['wif'][wif]
         if node.func[wif] == 'adhoc':
-            self.setType('managed', intf)
+            self.iwdev_cmd('%s set type managed' % self.name)
         self.name = '%s-mp%s' % (node, node.params['wif'][wif][-1:])
         if node.func[wif] == 'mesh' and 'phyap' in params:
             self.name = '%s-mp%s' % (node, wif+1)
 
-        self.setType('mp', node.params['wif'][wif])
+        self.iwdev_cmd('%s interface add %s type mp' %
+                       (node.params['wif'][wif], self.name))
         self.setMAC(node.params['mac'][wif])
         self.cmd('ip link set %s down' % intf)
         node.params['wif'][wif] = self.name
@@ -1266,7 +1261,7 @@ class mesh(IntfWireless):
         ht_cap = ''
         if 'ht_cap' in params:
             ht_cap = params['ht_cap']
-        self.join('mesh', ssid, freq, ht_cap, name)
+        self.join_mesh(ssid, freq, ht_cap, name)
 
     def setSecuredMesh(self, node, wif, **params):
         "Set secured mesh"
@@ -1321,7 +1316,7 @@ class physicalMesh(IntfWireless):
         freq = self.get_freq(node.params['freq'][wif])
         iface = node.params['wif'][wif]
         ht_cap = ''
-        self.join('mesh', ssid, freq, ht_cap, iface)
+        self.join_mesh(ssid, freq, ht_cap, iface)
 
         node.ifaceToAssociate += 1
 
