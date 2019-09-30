@@ -1556,7 +1556,7 @@ class Association(IntfWireless):
         pidfile = "mn%d_%s_%s_wpa.pid" % (os.getpid(), sta.name, wif)
         intf = sta.params['wif'][wif]
         cls.wpaFile(sta, ap, wif, ap_wif)
-        sta.wpa_cmd(pidfile, intf, wif)
+        sta.wpa_pexec(pidfile, intf, wif)
 
     @classmethod
     def handover_ieee80211r(cls, sta, ap, wif, ap_wif):

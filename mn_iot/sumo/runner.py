@@ -103,8 +103,7 @@ class sumo(object):
                         y2 = vehicleCommands.getPosition(vehID2)[1]
 
                         if int(vehID1) < len(cars):
-                            cars[int(vehID1)].params['position'] = x1, y1, 0
-                            cars[int(vehID1)].set_pos_wmediumd(cars[int(vehID1)].params['position'])
+                            cars[int(vehID1)].setPosition('%s, %s, %s' % (x1, y1, 0))
 
                         if abs(x1-x2)>0 and abs(x1-x2)<20 \
                                 and (road1 == opposite_road2 or road2 == opposite_road1):

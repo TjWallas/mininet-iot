@@ -183,6 +183,14 @@ class Node_wifi(Node):
                           "-i %s -c %s_%s.staconf %s"
                           % (pidfile, intf, self.name, wif, wpasup_flags))
 
+    def wpa_pexec(self, pidfile, intf, wlan):
+        wpasup_flags = ''
+        if 'wpasup_flags' in self.params:
+            wpasup_flags = self.params['wpasup_flags']
+        return self.pexec("wpa_supplicant -B -Dnl80211 -P %s "
+                          "-i %s -c %s_%s.staconf %s"
+                          % (pidfile, intf, self.name, wlan, wpasup_flags))
+
     def configLinks(self):
         "Applies channel params and handover"
         from mn_iot.mac80211.mobility import mobility
@@ -473,7 +481,7 @@ class Node_wifi(Node):
         points = np.array([(pos_src[0], pos_src[1], pos_src[2]),
                            (pos_dst[0], pos_dst[1], pos_dst[2])])
         dist = pdist(points)
-        return round(dist,2)
+        return round(dist, 2)
 
     def setAssociation(self, ap, intf=None):
         "Force association to given AP"
@@ -934,13 +942,14 @@ class AccessPoint(AP):
 
     write_mac = False
 
-    def __init__(self, aps, driver, link, setMaster=False):
+    def __init__(self, aps, driver, link, setMaster=False, config=False):
         'configure ap'
-        self.configure(aps, driver, link, setMaster)
+        if config:
+            self.check_nm(aps, driver, setMaster)
+        else:
+            self.configure(aps, link)
 
-    def configure(self, aps, driver, link, setMaster):
-        """Configure APs
-        :param aps: list of access points"""
+    def check_nm(self, aps, driver, setMaster):
         for ap in aps:
             if 'vssids' in ap.params:
                 for i in range(1, ap.params['vssids'] + 1):
@@ -962,6 +971,9 @@ class AccessPoint(AP):
                     break
         self.restartNetworkManager()
 
+    def configure(self, aps, link):
+        """Configure APs
+        :param aps: list of access points"""
         for ap in aps:
             wifs = len(ap.params['wif'])
             if 'link' not in ap.params:

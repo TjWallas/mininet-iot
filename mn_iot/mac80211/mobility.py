@@ -114,7 +114,7 @@ class mobility(object):
 
     @classmethod
     def remove_staconf(cls, sta, wif):
-        os.system('rm %s_%s.staconf' % (sta.name, wif))
+        os.system('rm %s_%s.staconf >/dev/null 2>&1' % (sta.name, wif))
 
     @classmethod
     def get_pidfile(cls, sta, wif):
@@ -125,11 +125,11 @@ class mobility(object):
     @classmethod
     def kill_wpasupprocess(cls, sta, wif):
         os.system('pkill -f \'wpa_supplicant -B -Dnl80211 -P %s -i '
-                  '%s\'' % (cls.get_pidfile(sta, wif), sta.params['wlan'][wif]))
+                  '%s\'' % (cls.get_pidfile(sta, wif), sta.params['wif'][wif]))
 
     @classmethod
     def check_if_wpafile_exist(cls, sta, wif):
-        file = '/var/run/wpa_supplicant/%s' % sta.params['wlan'][wif]
+        file = '/var/run/wpa_supplicant/%s >/dev/null 2>&1' % sta.params['wif'][wif]
         if os.path.exists(file):
             os.system(file)
 
@@ -182,10 +182,11 @@ class mobility(object):
                     pass
                 else:
                     if cls.wmediumd_mode and cls.wmediumd_mode != 3:
-                        Association.setSNRWmediumd(
-                            sta, ap, snr=sta.params['rssi'][wif] - (-91))
-                    else:
-                        wirelessLink(sta, ap, dist, wif=wif, ap_wif=0)
+                        if cls.wmediumd_mode:
+                            Association.setSNRWmediumd(
+                                sta, ap, snr=sta.params['rssi'][wif] - (-91))
+                        else:
+                            wirelessLink(sta, ap, dist, wif=wif, ap_wif=0)
 
     @classmethod
     def check_association(cls, sta, wif, ap_wif):
