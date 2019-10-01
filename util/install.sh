@@ -178,9 +178,10 @@ function wifi_deps {
     echo "Installing Mininet-IoT dependencies"
     $install wireless-tools rfkill ${PYPKG}-numpy pkg-config \
              libnl-3-dev libnl-genl-3-dev libssl-dev make libevent-dev patch \
-             ${PYPKG}-scipy ${PYPKG}-matplotlib
+             ${PYPKG}-scipy ${PYPKG}-scipy ${PYPKG}-pip libdbus-1-dev
+    sudo pip install matplotlib
 
-	pushd $MININET_DIR/mininet-iot
+	  pushd $MININET_DIR/mininet-iot
     git submodule update --init --recursive
     pushd $MININET_DIR/mininet-iot/hostap
     patch -p0 < $MININET_DIR/mininet-iot/util/hostap-patches/config.patch

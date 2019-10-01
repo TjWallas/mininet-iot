@@ -34,6 +34,7 @@ from mn_iot.mac80211.link import wirelessLink, wmediumd, Association, \
     _4address, TCWirelessLink, TCLinkWirelessStation, ITSLink, \
     wifiDirectLink, adhoc, mesh, physicalMesh, physicalWifiDirectLink
 from mn_iot.mac80211.devices import GetRate, GetRange
+from mn_iot.mac80211.telemetry import parseData
 from mn_iot.mac80211.mobility import tracked as trackedMob, \
     model as mobModel, mobility as mob
 from mn_iot.mac80211.plot import plot2d, plot3d, plotGraph
@@ -1985,6 +1986,8 @@ class Mininet_wifi(Mininet):
     @staticmethod
     def stopGraphParams():
         "Stop the graph"
+        if parseData.thread_:
+            parseData.thread_._keep_alive = False
         if mob.thread_:
             mob.thread_._keep_alive = False
         if mobSensor.thread_:
