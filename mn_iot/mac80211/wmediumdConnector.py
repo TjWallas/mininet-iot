@@ -1,11 +1,8 @@
-"""
+"""Helps starting the wmediumd service
 
-Helps starting the wmediumd service
+authors:    Patrick Grosse (patrick.grosse@uni-muenster.de)
+            Ramon Fontes (ramonrf@dca.fee.unicamp.br)"""
 
-author: Patrick Grosse (patrick.grosse@uni-muenster.de)
-author: Ramon Fontes (ramonrf@dca.fee.unicamp.br)
-
-"""
 import ctypes
 import os
 import socket
@@ -421,9 +418,7 @@ class w_pos(object):
     def __init__(self, staintf, sta_pos):
         """
         Describes the pos of a station
-
         :param sta_pos: Instance of WmediumdPosRef
-
         :type sta_pos: WmediumdPosRef
         """
         self.staintf = staintf
@@ -434,9 +429,7 @@ class w_txpower(object):
     def __init__(self, staintf, sta_txpower):
         """
         Describes the Transmission Power of a station
-
         :param sta_txpower: Instance of TXPowerRef
-
         :type sta_txpower: TXPowerRef
         """
         self.staintf = staintf
@@ -448,9 +441,7 @@ class w_gain(object):
     def __init__(self, staintf, sta_gain):
         """
         Describes the Antenna Gain of a station
-
         :param sta_gain: Instance of GainRef
-
         :type sta_gain: GainRef
         """
         self.staintf = staintf
@@ -462,9 +453,7 @@ class WmediumdGRandom(object):
     def __init__(self, staintf, sta_gaussian_random):
         """
         Describes the Gaussian Random of a node
-
         :param sta_gaussian_random: Instance of WmediumdGRandomRef
-
         :type sta_gaussian_random: WmediumdGRandomRef
         """
         self.staintf = staintf
@@ -476,9 +465,7 @@ class w_height(object):
     def __init__(self, staintf, sta_height):
         """
         Describes the Antenna Height of a station
-
         :param sta_height: Instance of HeightRef
-
         :type sta_height: HeightRef
         """
         self.staintf = staintf
@@ -490,11 +477,9 @@ class SNRLink(object):
     def __init__(self, sta1intf, sta2intf, snr=10):
         """
         Describes a link between two interfaces using the SNR
-
         :param sta1intf: Instance of WmediumdIntfRef
         :param sta2intf: Instance of WmediumdIntfRef
         :param snr: Signal Noise Ratio as int
-
         :type sta1intf: WmediumdIntfRef
         :type sta2intf: WmediumdIntfRef
         :type snr: int
@@ -509,11 +494,9 @@ class ERRPROBLink(object):
     def __init__(self, sta1intf, sta2intf, errprob=0.2):
         """
         Describes a link between two interfaces using the error probability
-
         :param sta1intf: Instance of WmediumdIntfRef
         :param sta2intf: Instance of WmediumdIntfRef
         :param errprob: The error probability in the range [0.0;1.0]
-
         :type sta1intf: WmediumdIntfRef
         :type sta2intf: WmediumdIntfRef
         :type errprob: float
@@ -536,7 +519,6 @@ class WmediumdSPECPROBLink(object):
         the two dimensional array has as first
             dimension the packet size index and as the second the data
             rate index: errprobs[size_idx][rate_idx]
-
         :type sta1intf: WmediumdIntfRef
         :type sta2intf: WmediumdIntfRef
         :type errprobs: float[][]
@@ -551,11 +533,9 @@ class WmediumdIntfRef:
     def __init__(self, staname, intfname, intfmac):
         """
         An unambiguous reference to an interface of a station
-
         :param staname: Station name
         :param intfname: Interface name
         :param intfmac: Interface MAC address
-
         :type staname: str
         :type intfname: str
         :type intfmac: str
@@ -567,7 +547,6 @@ class WmediumdIntfRef:
     def get_station_name(self):
         """
         Get the name of the station
-
         :rtype: str
         """
         return self.__staname
@@ -575,7 +554,6 @@ class WmediumdIntfRef:
     def get_intf_name(self):
         """
         Get the interface name
-
         :rtype: str
         """
         return self.__intfname
@@ -583,7 +561,6 @@ class WmediumdIntfRef:
     def get_mac(self):
         """
         Get the MAC address of the interface
-
         :rtype: str
         """
         return self.__intfmac
@@ -591,7 +568,6 @@ class WmediumdIntfRef:
     def id(self):
         """
         Id used in dicts
-
         :rtype: str
         """
         return self.get_station_name() + "." + self.get_intf_name()
@@ -602,11 +578,9 @@ class DynamicWmediumdIntfRef(WmediumdIntfRef):
     def __init__(self, sta, intf=None):
         """
         An unambiguous reference to an interface of a station
-
         :param sta: Mininet-Wifi station
         :param intf: Mininet interface or name of Mininet interface.
         If None, the default interface will be used
-
         :type sta: Station
         :type intf: Union [Intf, str, None]
         """
@@ -778,7 +752,6 @@ class w_server(object):
         Register a new interface at wmediumd
         :param mac The mac address of the interface
         :return The wmediumd station index
-
         :type mac: str
         :rtype int
         """
@@ -796,7 +769,6 @@ class w_server(object):
         """
         Unregister a station at wmediumd
         :param mac The mac address of the interface
-
         :type mac: str
         """
         info("\n%s Unregistering interface with mac %s"
@@ -812,7 +784,6 @@ class w_server(object):
         """
         Update the SNR of a connection at wmediumd
         :param link The link to update
-
         :type link: WmediumdLink
         """
         ret = w_server.send_snr_update(link)
@@ -826,7 +797,6 @@ class w_server(object):
         """
         Update the Pos of a connection at wmediumd
         :param pos The pos to update
-
         :type pos: w_pos
         """
         ret = w_server.send_pos_update(pos, mob)
@@ -840,7 +810,6 @@ class w_server(object):
         """
         Update the w_txpower of a connection at wmediumd
         :param txpower The txpower to update
-
         :type txpower: w_txpower
         """
         ret = w_server.send_txpower_update(txpower)
@@ -854,7 +823,6 @@ class w_server(object):
         """
         Update the Antenna Gain of a connection at wmediumd
         :param gain The gain to update
-
         :type gain: Gain
         """
         ret = w_server.send_gain_update(gain)
@@ -868,7 +836,6 @@ class w_server(object):
         """
         Update the Gaussian Random of a connection at wmediumd
         :param gRandom The gRandom to update
-
         :type gRandom: WmediumdGRandom
         """
         ret = w_server.send_gaussian_random_update(gRandom)
@@ -882,7 +849,6 @@ class w_server(object):
         """
         Update the Antenna Height of a connection at wmediumd
         :param height The height to update
-
         :type height: Height
         """
         ret = w_server.send_height_update(height)
@@ -896,7 +862,6 @@ class w_server(object):
         """
         Update the ERRPROB of a connection at wmediumd
         :param link The link to update
-
         :type link: WmediumdLink
         """
         ret = w_server.send_errprob_update(link)
@@ -910,7 +875,6 @@ class w_server(object):
         """
         Update the SPECPROB of a connection at wmediumd
         :param link The link to update
-
         :type link: WmediumdLink
         """
         ret = w_server.send_specprob_update(link)

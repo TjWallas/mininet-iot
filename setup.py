@@ -23,12 +23,13 @@ setup(
     packages=[ 'mn_iot', 'mn_iot.mac80211', 'mn_iot.mac802154', 'mn_iot.wmediumd.data',
                'mn_iot.examples', 'mn_iot.sumo', 'mn_iot.sumo.sumolib',
                'mn_iot.sumo.traci', 'mn_iot.sumo.data', 'mn_iot.sumo.sumolib.net',
-               'mn_iot.sumo.sumolib.output', 'mn_iot.sumo.sumolib.shapes' ],
-    package_data={'mn_iot.sumo.data': ['*.xml', '*.sumocfg'], 'mn_iot.wmediumd.data': ['signal_table_ieee80211ax',
-                                                                                'signal_table_ieee80211n_gi20',
-                                                                                'signal_table_ieee80211n_gi40',
-                                                                                'signal_table_ieee80211n_sgi20',
-                                                                                'signal_table_ieee80211n_sgi40']},
+               'mn_iot.sumo.sumolib.output', 'mn_iot.sumo.sumolib.shapes', 'util' ],
+    package_data={'util' : ['m'], 'mn_iot.sumo.data': ['*.xml', '*.sumocfg'],
+                  'mn_iot.wmediumd.data': ['signal_table_ieee80211ax',
+                                           'signal_table_ieee80211n_gi20',
+                                           'signal_table_ieee80211n_gi40',
+                                           'signal_table_ieee80211n_sgi20',
+                                           'signal_table_ieee80211n_sgi40']},
     long_description="""
         Mininet-WiFi is a network emulator which uses lightweight
         virtualization to create virtual networks for rapid
