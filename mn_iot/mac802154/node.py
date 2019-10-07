@@ -4,8 +4,7 @@ author: Ramon Fontes (ramonrf@dca.fee.unicamp.br)
 """
 
 import re
-import numpy as np
-from scipy.spatial.distance import pdist
+import math
 
 from mininet.log import info, debug
 from mininet.util import Python3, getincrementaldecoder, moveIntf
@@ -191,10 +190,10 @@ class Node_mac802154(Node):
 
         pos_src = self.params['position']
         pos_dst = dst.params['position']
-        points = np.array([(pos_src[0], pos_src[1], pos_src[2]),
-                           (pos_dst[0], pos_dst[1], pos_dst[2])])
-        dist = pdist(points)
-        return round(dist,2)
+        dist = math.sqrt((pos_src[0] - pos_dst[0]) ** 2 +
+                         (pos_src[1] - pos_dst[1]) ** 2 +
+                         (pos_src[2] - pos_dst[2]) ** 2)
+        return round(dist, 2)
 
     def get_rssi(self, node=None, wif=0, dist=0):
         value = propagationModel(self, node, dist, wif)
