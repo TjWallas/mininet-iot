@@ -11,7 +11,6 @@ from sys import version_info as py_version_info
 from six import string_types
 
 from mininet.log import info, error, debug
-from mininet.link import TCIntf
 from mn_iot.mac80211.devices import GetRate
 from mn_iot.mac80211.adhocRoutingProtocols import adhocProtocols
 from mn_iot.mac80211.wmediumdConnector import DynamicWmediumdIntfRef, \
@@ -1096,7 +1095,7 @@ class adhoc(IntfWireless):
                         node.params['wif'][wif] = intf_.replace('mp', 'wif')
         else:
             wif = node.ifaceToAssociate
-        intf = node.params['wif'][wif]
+        #intf = node.params['wif'][wif]
 
         self.name = node.params['wif'][wif]
         if 'ssid' not in node.params:

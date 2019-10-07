@@ -21,13 +21,12 @@ OVSAP: a AP using the Open vSwitch OpenFlow-compatible switch
 
 import os
 import re
+import math
 from re import findall
 import fileinput
 from time import sleep
 from distutils.version import StrictVersion
 from sys import version_info as py_version_info
-import numpy as np
-from scipy.spatial.distance import pdist
 from six import string_types
 
 from mininet.log import info, error, debug
@@ -43,7 +42,6 @@ from mn_iot.mac80211.wmediumdConnector import w_server, w_pos, w_txpower, \
     w_gain, w_height, w_cst, wmediumd_mode
 from mn_iot.mac80211.propagationModels import GetSignalRange, \
     GetPowerGivenRange, propagationModel
-from mn_iot.mac80211.module import module
 
 
 class Node_wifi(Node):
@@ -110,13 +108,13 @@ class Node_wifi(Node):
     def setMeshMode(self, intf=None, **kwargs):
         if intf:
             kwargs['intf'] = intf
-        wif = self.get_wif(kwargs['intf'])
+        #wif = self.get_wif(kwargs['intf'])
         mesh(self, **kwargs)
 
     def setPhysicalMeshMode(self, intf=None, **kwargs):
         if intf:
             kwargs['intf'] = intf
-        wif = self.get_wif(kwargs['intf'])
+        #wif = self.get_wif(kwargs['intf'])
         physicalMesh(self, **kwargs)
 
     def setAdhocMode(self, intf=None, **kwargs):
@@ -464,9 +462,9 @@ class Node_wifi(Node):
 
         pos_src = self.params['position']
         pos_dst = dst.params['position']
-        points = np.array([(pos_src[0], pos_src[1], pos_src[2]),
-                           (pos_dst[0], pos_dst[1], pos_dst[2])])
-        dist = pdist(points)
+        dist = math.sqrt((pos_src[0] - pos_dst[0]) ** 2 +
+                         (pos_src[1] - pos_dst[1]) ** 2 +
+                         (pos_src[2] - pos_dst[2]) ** 2)
         return round(dist, 2)
 
     def setAssociation(self, ap, intf=None):
@@ -481,7 +479,7 @@ class Node_wifi(Node):
             if self.params['associatedTo'][wif] != ap:
                 if self.params['associatedTo'][wif]:
                     Association.disconnect(self, wif)
-                Association.associate_infra(self, ap, **params)
+                Association.associate_infra(self, ap)
                 wirelessLink(self, ap, wif, 0, dist)
             else:
                 info ('%s is already connected!\n' % ap)
@@ -965,7 +963,7 @@ class AccessPoint(AP):
             if 'link' not in ap.params:
                 if 'phywlan' in ap.params:
                     for wif in range(wifs):
-                        cls.setConfig(ap, aps, wif, link)
+                        self.setConfig(ap, aps, wif, link)
                         if 'vssids' in ap.params:
                             break
                 for wif in range(wifs):
@@ -1109,7 +1107,7 @@ class AccessPoint(AP):
                     elif ap.params['encrypt'][wif] == 'wep':
                         cmd = cmd + ("\nauth_algs=%s" % ap.auth_algs)
                         cmd = cmd + ("\nwep_default_key=%s" % 0)
-                        cmd = cmd + cls.verifyWepKey(ap.wep_key0)
+                        cmd = cmd + self.verifyWepKey(ap.wep_key0)
 
                 if ap.params['mode'][wif] == 'ac':
                     cmd = cmd + ("\nwmm_enabled=1")
@@ -1152,7 +1150,7 @@ class AccessPoint(AP):
                     if ap.params['encrypt'][i] == 'wep':
                         cmd = cmd + ("\nauth_algs=%s" % ap.auth_algs)
                         cmd = cmd + ("\nwep_default_key=0")
-                        cmd = cmd + cls.verifyWepKey(ap.wep_key0)
+                        cmd = cmd + self.verifyWepKey(ap.wep_key0)
                 ap.params['mac'][i] = ap.params['mac'][wif][:-1] + str(i)
         cmd = cmd + ("\nctrl_interface=/var/run/hostapd")
         cmd = cmd + ("\nctrl_interface_group=0")
@@ -1284,9 +1282,9 @@ class AccessPoint(AP):
                 for line in fileinput.input('/etc/%s/%s.conf' % (nm, nm),
                                             inplace=1):
                     if isNew:
-                        cls.write_to_file(line, unmatch, echo, '#')
+                        self.write_to_file(line, unmatch, echo, '#')
                     else:
-                        cls.write_to_file(line, unmatch, echo, unmanaged)
+                        self.write_to_file(line, unmatch, echo, unmanaged)
                 self.write_mac = True
 
     def write_to_file(self, line, unmatch, echo, str_):

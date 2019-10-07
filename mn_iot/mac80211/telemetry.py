@@ -99,7 +99,7 @@ class telemetry(object):
         j = 0
         wif = 1
         for phy in phys:
-            i = phys.index(phy)
+            #i = phys.index(phy)
             try:
                 ifaces_ = subprocess.check_output(cmd.format(phy), stderr=subprocess.PIPE,
                                                   shell=True).split("\n")

@@ -1,12 +1,13 @@
 MININET = mininet/mininet/*.py
-MININET_IoT = mn_iot/*.py
+MININET_IOT = mn_iot/mac802154/*.py
+MININET_WIFI = mn_iot/mac80211/*.py
 TEST = mn_iot/test/*.py
 EXAMPLES = mn_iot/examples/*.py
 MN = bin/mn
 PYTHON ?= python
 PYMN = $(PYTHON) -B bin/mn
 BIN = $(MN)
-PYSRC = $(MININET) $(MININET_IoT) $(TEST) $(EXAMPLES) $(BIN)
+PYSRC = $(MININET) $(MININET_IOT) $(MININET_WIFI) $(TEST) $(EXAMPLES) $(BIN)
 MNEXEC = mnexec
 MANPAGES = mn.1 mnexec.1
 P8IGN = E251,E201,E302,E202,E126,E127,E203,E226

@@ -383,8 +383,6 @@ class tracked(mobility):
         mobility.set_wifi_params()
 
     def configure(self, **kwargs):
-        from mn_wifi.node import Station
-
         if 'ac_method' in kwargs:
             mobility.ac = kwargs['ac_method']
         mobility.stations = kwargs['stations']
@@ -623,7 +621,7 @@ def init_random_waypoint(nr_nodes, dimensions,
                          speed_low, speed_high,
                          pause_low, pause_high):
 
-    ndim = len(dimensions)
+    #ndim = len(dimensions)
     x = np.empty(nr_nodes)
     y = np.empty(nr_nodes)
     x_waypoint = np.empty(nr_nodes)
@@ -747,7 +745,7 @@ class RandomWaypoint(object):
             MIN_Y[node] = self.nodes[node].min_y
 
         dimensions = (MAX_X, MAX_Y)
-        ndim = len(dimensions)
+        #ndim = len(dimensions)
 
         if self.init_stationary:
             x, y, x_waypoint, y_waypoint, velocity, wt = \

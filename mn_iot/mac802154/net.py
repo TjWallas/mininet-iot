@@ -8,11 +8,10 @@ from six import string_types
 
 from mininet.net import Mininet
 from mininet.node import (DefaultController)
-from mininet.util import (fixLimits, numCores, ensureRoot,
-                          macColonHex, waitListening)
+from mininet.util import (numCores, macColonHex, waitListening)
 from mn_iot.mac802154.util import ipAdd6, netParse
 from mininet.link import Intf
-from mininet.log import info, error, debug, output
+from mininet.log import error, debug, output
 
 from mn_iot.mac802154.node import Sixlowpan
 from mn_iot.mac802154.module import module

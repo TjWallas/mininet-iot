@@ -156,13 +156,6 @@ function mn_deps {
       rm -r mininet
     fi
 
-    # Last check for python2
-    python=${python:-python}
-    if $python --version |& grep 'Python 2' > /dev/null; then
-      $install python-numpy python-matplotlib python-scipy \
-          python-setuptools python-pexpect python-tk
-    fi
-
     sudo git clone --depth=1 https://github.com/mininet/mininet.git
     pushd $MININET_DIR/mininet-iot/mininet
     sudo python=${python} make install
@@ -175,13 +168,22 @@ function mn_deps {
 
 # Install Mininet-IoT deps
 function wifi_deps {
-    echo "Installing Mininet-IoT dependencies"
+    echo "Installing Mininet-WiFi dependencies"
     $install wireless-tools rfkill ${PYPKG}-numpy pkg-config \
              libnl-3-dev libnl-genl-3-dev libssl-dev make libevent-dev patch \
-             ${PYPKG}-scipy ${PYPKG}-scipy ${PYPKG}-pip libdbus-1-dev
-    sudo pip install matplotlib
+             ${PYPKG}-pip libdbus-1-dev
 
-	  pushd $MININET_DIR/mininet-iot
+    # Last check for python2
+    python=${python:-python}
+    if $python --version |& grep 'Python 2' > /dev/null; then
+        sudo pip install --upgrade pip
+        sudo pip install matplotlib==2.1.1 --ignore-installed six
+    else
+        sudo pip3 install --upgrade pip3
+        sudo pip3 install matplotlib==2.1.1 --ignore-installed six
+    fi
+
+    pushd $MININET_DIR/mininet-iot
     git submodule update --init --recursive
     pushd $MININET_DIR/mininet-iot/hostap
     patch -p0 < $MININET_DIR/mininet-iot/util/hostap-patches/config.patch
