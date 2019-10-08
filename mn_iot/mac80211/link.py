@@ -983,12 +983,10 @@ class wirelessLink (object):
 
 class ITSLink(IntfWireless):
 
-    def __init__(self, node, port=None, physical=False, **params):
+    def __init__(self, node, physical=False, **params):
         "configure ieee80211p"
-        if port:
-            for port_ in node.params['wif']:
-                if params['port'] == port_:
-                    wif = node.params['wif'].index(port_)
+        if 'intf' in params:
+            wif = node.params['wif'].index(params['intf'])
         else:
             wif = node.ifaceToAssociate
 
@@ -996,18 +994,16 @@ class ITSLink(IntfWireless):
         node.params['freq'][wif] = node.get_freq(wif)
         node.setOCBIface(wif)
 
-        if not port:
+        if 'intf' not in params:
             node.ifaceToAssociate += 1
 
 
 class wifiDirectLink(IntfWireless):
 
-    def __init__(self, node, port=None, physical=False, **params):
+    def __init__(self, node, physical=False, **params):
         "configure wifi-direct"
-        if port:
-            for port_ in node.params['wif']:
-                if params['port'] == port_:
-                    wif = node.params['wif'].index(port_)
+        if 'intf' in params:
+            wif = node.params['wif'].index(params['intf'])
         else:
             wif = node.ifaceToAssociate
 
@@ -1035,7 +1031,7 @@ class wifiDirectLink(IntfWireless):
             cmd = self.get_wpa_cmd(filename, iface)
             node.cmd(cmd)
 
-        if not port:
+        if 'intf' not in params:
             node.ifaceToAssociate += 1
 
     @classmethod
@@ -1080,19 +1076,17 @@ class adhoc(IntfWireless):
 
     node = None
 
-    def __init__(self, node, link=None, **params):
+    def __init__(self, node, **params):
         """Configure AdHoc
         node: name of the node
         self: custom association class/constructor
         params: parameters for station"""
         self.node = node
         if 'intf' in params:
-            for intf_ in node.params['wif']:
-                if params['intf'] == intf_:
-                    wif = node.params['wif'].index(intf_)
-                    if 'mp' in intf_:
-                        self.iwdev_cmd('%s del' % node.params['wif'][wif])
-                        node.params['wif'][wif] = intf_.replace('mp', 'wif')
+            wif = node.params['wif'].index(params['intf'])
+            if 'mp' in params['intf']:
+                self.iwdev_cmd('%s del' % node.params['wif'][wif])
+                node.params['wif'][wif] = params['intf'].replace('mp', 'wif')
         else:
             wif = node.ifaceToAssociate
         #intf = node.params['wif'][wif]
@@ -1179,9 +1173,7 @@ class mesh(IntfWireless):
         self.node = node
 
         if 'intf' in params:
-            for intf_ in node.params['wif']:
-                if params['intf'] == intf_:
-                    wif = node.params['wif'].index(intf_)
+            wif = node.params['wif'].index(params['intf'])
         else:
             wif = node.ifaceToAssociate
 

@@ -1,13 +1,13 @@
 MININET = mininet/mininet/*.py
-MININET_IOT = mn_iot/mac802154/*.py
-MININET_WIFI = mn_iot/mac80211/*.py
+MININET-IOT = mn_iot/mac802154/*.py
+MININET-WIFI = mn_iot/mac80211/*.py
 TEST = mn_iot/test/*.py
 EXAMPLES = mn_iot/examples/*.py
 MN = bin/mn
 PYTHON ?= python
 PYMN = $(PYTHON) -B bin/mn
 BIN = $(MN)
-PYSRC = $(MININET) $(MININET_IOT) $(MININET_WIFI) $(TEST) $(EXAMPLES) $(BIN)
+PYSRC = $(MININET) $(MININET-IOT) $(MININET-WIFI) $(TEST) $(EXAMPLES) $(BIN)
 MNEXEC = mnexec
 MANPAGES = mn.1 mnexec.1
 P8IGN = E251,E201,E302,E202,E126,E127,E203,E226
@@ -29,7 +29,7 @@ codecheck: $(PYSRC)
 	util/versioncheck.py
 	pyflakes $(PYSRC)
 	pylint --rcfile=.pylint $(PYSRC)
-#	Exclude miniedit from pep8 checking for now
+    #Exclude miniedit from pep8 checking for now
 	pep8 --repeat --ignore=$(P8IGN) `ls $(PYSRC) | grep -v miniedit.py`
 
 errcheck: $(PYSRC)
@@ -37,12 +37,12 @@ errcheck: $(PYSRC)
 	pyflakes $(PYSRC)
 	pylint -E --rcfile=.pylint $(PYSRC)
 
-test: $(MININET_IoT) $(TEST)
+test: $(MININET-IOT) $(TEST)
 	-echo "Running tests"
 	mn_iot/test/test_nets.py
 	mn_iot/test/test_hifi.py
 
-slowtest: $(MININET_IoT)
+slowtest: $(MININET-IOT)
 	-echo "Running slower tests (walkthrough, examples)"
 	mn_iot/test/test_walkthrough.py -v
 	mn_iot/examples/test/runner.py -v
