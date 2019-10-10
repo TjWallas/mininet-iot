@@ -59,6 +59,9 @@ class IntfWireless(object):
         "Run a command in our owning node"
         return self.node.pexec(*args, **kwargs)
 
+    def set_dev_type(self, type):
+        self.iwdev_cmd('%s set type %s' % type)
+
     def iwdev_cmd(self, *args):
         return self.cmd('iw dev', *args)
 
@@ -985,6 +988,8 @@ class ITSLink(IntfWireless):
 
     def __init__(self, node, physical=False, **params):
         "configure ieee80211p"
+        self.node = node
+
         if 'intf' in params:
             wif = node.params['wif'].index(params['intf'])
         else:
@@ -992,10 +997,24 @@ class ITSLink(IntfWireless):
 
         node.func[wif] = 'its'
         node.params['freq'][wif] = node.get_freq(wif)
-        node.setOCBIface(wif)
+        iface = node.params['wif'][wif]
+        self.name = iface
+        self.set_ocb_mode()
+        self.configure_ocb(wif)
 
         if 'intf' not in params:
             node.ifaceToAssociate += 1
+
+    def set_ocb_mode(self):
+        "Set OCB Interface"
+        self.ipLink('down')
+        self.set_dev_type('ocb')
+        self.ipLink('up')
+
+    def configure_ocb(self, wif):
+        "Configure Wireless OCB"
+        freq = str(self.node.params['freq'][wif]).replace(".", "")
+        self.iwdev_cmd('%s ocb join %s 20MHz' % (self.name, freq))
 
 
 class wifiDirectLink(IntfWireless):
@@ -1125,7 +1144,7 @@ class adhoc(IntfWireless):
     def configureAdhoc(self, node, wif, **params):
         "Configure Wireless Ad Hoc"
         node.func[wif] = 'adhoc'
-        self.iwdev_cmd('%s set type ibss' % self.name)
+        self.set_dev_type('ibss')
         self.ipLink('up')
 
         if 'passwd' in params:
@@ -1202,7 +1221,7 @@ class mesh(IntfWireless):
         wif = node.params['wif'].index(self.name)
         intf = node.params['wif'][wif]
         if node.func[wif] == 'adhoc':
-            self.iwdev_cmd('%s set type managed' % self.name)
+            self.set_dev_type('managed')
         self.name = '%s-mp%s' % (node, node.params['wif'][wif][-1:])
         if node.func[wif] == 'mesh' and 'phyap' in params:
             self.name = '%s-mp%s' % (node, wif+1)
