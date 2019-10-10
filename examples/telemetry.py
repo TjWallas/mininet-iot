@@ -8,7 +8,6 @@ from mn_iot.mac80211.link import wmediumd
 from mn_iot.mac80211.cli import CLI_wifi
 from mn_iot.mac80211.net import Mininet_wifi
 from mn_iot.mac80211.wmediumdConnector import interference
-from mn_iot.mac80211.telemetry import telemetry
 
 
 def topology():
@@ -36,7 +35,7 @@ def topology():
 
     # refer to mn_wifi/telemetry for more information
     nodes = net.stations
-    telemetry(nodes, single=True, data_type='rssi')
+    net.telemetry(nodes, single=True, data_type='rssi')
 
     info("*** Starting network\n")
     net.build()

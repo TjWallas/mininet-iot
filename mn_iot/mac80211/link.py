@@ -12,7 +12,7 @@ from six import string_types
 
 from mininet.log import info, error, debug
 from mn_iot.mac80211.devices import GetRate
-from mn_iot.mac80211.adhocRoutingProtocols import adhocProtocols
+from mn_iot.mac80211.manetRoutingProtocols import manetProtocols
 from mn_iot.mac80211.wmediumdConnector import DynamicWmediumdIntfRef, \
     w_starter, SNRLink, w_txpower, w_pos, \
     w_cst, w_server, ERRPROBLink, wmediumd_mode
@@ -1116,7 +1116,7 @@ class adhoc(IntfWireless):
         self.configureAdhoc(node, wif, **params)
 
         if 'proto' in params:
-            adhocProtocols(params['proto'], node, wif)
+            manetProtocols(params['proto'], node, wif, **params)
 
         if 'intf' not in params:
             node.ifaceToAssociate += 1
@@ -1481,6 +1481,7 @@ class Association(IntfWireless):
         :param sta: station
         :param ap: access point
         :param wif: wif ID"""
+        cmd = ''
         if 'config' not in ap.params or 'config' not in sta.params:
             if 'authmode' not in ap.params:
                 if 'passwd' not in sta.params:
@@ -1488,10 +1489,13 @@ class Association(IntfWireless):
                 else:
                     passwd = sta.params['passwd'][wif]
 
-        cmd = 'ctrl_interface=/var/run/wpa_supplicant\n'
+        if 'wpasup_globals' not in sta.params \
+                or ('wpasup_globals' in sta.params
+                    and 'ctrl_interface=' not in sta.params['wpasup_globals']):
+            cmd = 'ctrl_interface=/var/run/wpa_supplicant\n'
         if 'wpasup_globals' in sta.params:
             cmd += sta.params['wpasup_globals'] + '\n'
-        cmd += 'network={\n'
+        cmd = cmd + 'network={\n'
 
         if 'config' in sta.params:
             config = sta.params['config']

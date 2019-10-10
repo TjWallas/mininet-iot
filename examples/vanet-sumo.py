@@ -85,9 +85,9 @@ def topology():
 
     # Track the position of the nodes
     #nodes = net.cars + net.aps
-    #telemetry(nodes, data_type='position',
-    #          min_x=2500, min_y=2500,
-    #          max_x=4000, max_y=4000)
+    #net.telemetry(nodes, data_type='position',
+    #              min_x=2500, min_y=2500,
+    #              max_x=4000, max_y=4000)
 
     info("*** Running CLI\n")
     CLI_wifi(net)
