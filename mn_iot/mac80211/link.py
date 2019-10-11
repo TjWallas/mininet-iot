@@ -986,14 +986,16 @@ class wirelessLink (object):
 
 class ITSLink(IntfWireless):
 
-    def __init__(self, node, physical=False, **params):
+    def __init__(self, node, intf=None, channel=161):
         "configure ieee80211p"
         self.node = node
 
-        if 'intf' in params:
-            wif = node.params['wif'].index(params['intf'])
+        if intf:
+            wif = node.params['wif'].index(intf)
         else:
             wif = node.ifaceToAssociate
+
+        node.params['channel'][wif] = channel
 
         node.func[wif] = 'its'
         node.params['freq'][wif] = node.get_freq(wif)
@@ -1002,7 +1004,7 @@ class ITSLink(IntfWireless):
         self.set_ocb_mode()
         self.configure_ocb(wif)
 
-        if 'intf' not in params:
+        if not intf:
             node.ifaceToAssociate += 1
 
     def set_ocb_mode(self):
