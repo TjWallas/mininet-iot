@@ -44,7 +44,6 @@ class spec_prob(object):
 class interference(object):
     def __init__(self):
         wmediumd_mode.set_mode(mode=3)
-        print "kkkk"
 
 
 class w_cst:
