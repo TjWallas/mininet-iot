@@ -1015,36 +1015,29 @@ class ITSLink(IntfWireless):
 
 class wifiDirectLink(IntfWireless):
 
-    def __init__(self, node, physical=False, **params):
+    def __init__(self, node, intf=None, **params):
         "configure wifi-direct"
-        if 'intf' in params:
-            wif = node.params['wif'].index(params['intf'])
+        if intf:
+            wif = node.params['wif'].index(intf)
         else:
             wif = 0
+            intf = node.params['wif'][wif]
 
         if 'position' not in node.params:
             nums = re.findall(r'\d+', node.name)
             if nums:
                 id = hex(int(nums[0]))[2:]
-                node.params['position'] = (10, round(id,2), 0)
+                node.params['position'] = (10, round(id, 2), 0)
 
         node.func[wif] = 'wifiDirect'
 
-        iface = None
-        if physical:
-            iface = 'phy' + node.name
-            wif = 0
+        iface = 'phy' + node.name
+        wif = 0
         filename = self.get_filename(node, wif, iface)
         self.config_(node, wif, filename)
 
-        if physical:
-            iface = params['intf']
-            cmd = self.get_wpa_cmd(filename, iface)
-            os.system(cmd)
-        else:
-            iface = node.params['wif'][wif]
-            cmd = self.get_wpa_cmd(filename, iface)
-            node.cmd(cmd)
+        cmd = self.get_wpa_cmd(filename, intf)
+        os.system(cmd)
 
     @classmethod
     def get_filename(cls, node, wif, iface=None):
@@ -1077,11 +1070,38 @@ class wifiDirectLink(IntfWireless):
         subprocess.check_output(cmd, shell=True)
 
 
-class physicalWifiDirectLink(IntfWireless):
+class physicalWifiDirectLink(wifiDirectLink):
 
-    def __init__(self, node, port=None, **params):
-        "configure physical wifi-direct"
-        wifiDirectLink(node, port, physical=True, **params)
+    def __init__(self, node, intf=None, physical=False, **params):
+        "configure wifi-direct"
+        if intf:
+            wif = node.params['wif'].index(intf)
+        else:
+            wif = 0
+
+        if 'position' not in node.params:
+            nums = re.findall(r'\d+', node.name)
+            if nums:
+                id = hex(int(nums[0]))[2:]
+                node.params['position'] = (10, round(id, 2), 0)
+
+        node.func[wif] = 'wifiDirect'
+
+        iface = None
+        if physical:
+            iface = 'phy' + node.name
+            wif = 0
+        filename = self.get_filename(node, wif, iface)
+        self.config_(node, wif, filename)
+
+        if physical:
+            iface = params['intf']
+            cmd = self.get_wpa_cmd(filename, iface)
+            os.system(cmd)
+        else:
+            iface = node.params['wif'][wif]
+            cmd = self.get_wpa_cmd(filename, iface)
+            node.cmd(cmd)
 
 
 class adhoc(IntfWireless):
