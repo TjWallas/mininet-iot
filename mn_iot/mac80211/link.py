@@ -60,7 +60,7 @@ class IntfWireless(object):
         return self.node.pexec(*args, **kwargs)
 
     def set_dev_type(self, type):
-        self.iwdev_cmd('%s set type %s' % type)
+        self.iwdev_cmd('%s set type %s' % (self.name, type))
 
     def iwdev_cmd(self, *args):
         return self.cmd('iw dev', *args)
