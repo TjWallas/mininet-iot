@@ -44,6 +44,7 @@ class spec_prob(object):
 class interference(object):
     def __init__(self):
         wmediumd_mode.set_mode(mode=3)
+        print "kkkk"
 
 
 class w_cst:
@@ -572,7 +573,7 @@ class WmediumdIntfRef:
         return self.get_station_name() + "." + self.get_intf_name()
 
 
-class DynamicWmediumdIntfRef(WmediumdIntfRef):
+class DynamicIntfRef(WmediumdIntfRef):
     'Intf Ref'
     def __init__(self, sta, intf=None):
         """

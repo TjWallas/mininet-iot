@@ -13,7 +13,7 @@ from six import string_types
 from mininet.log import info, error, debug
 from mn_iot.mac80211.devices import GetRate
 from mn_iot.mac80211.manetRoutingProtocols import manetProtocols
-from mn_iot.mac80211.wmediumdConnector import DynamicWmediumdIntfRef, \
+from mn_iot.mac80211.wmediumdConnector import DynamicIntfRef, \
     w_starter, SNRLink, w_txpower, w_pos, \
     w_cst, w_server, ERRPROBLink, wmediumd_mode
 
@@ -794,7 +794,7 @@ class wmediumd(TCWirelessLink):
             for wif in range(0, len(node.params['wif'])):
                 if wif < len(node.params['mac']):
                     node.wmIface.append(wif)
-                    node.wmIface[wif] = DynamicWmediumdIntfRef(node, intf=wif)
+                    node.wmIface[wif] = DynamicIntfRef(node, intf=wif)
                     intfrefs.append(node.wmIface[wif])
                     if (node.func[wif] == 'ap'
                         or (node in aps and (node.func[wif] is not 'client'
@@ -805,7 +805,7 @@ class wmediumd(TCWirelessLink):
             for n in maclist:
                 for key in n:
                     if key == node:
-                        key.wmIface.append(DynamicWmediumdIntfRef(key, intf=len(key.wmIface)))
+                        key.wmIface.append(DynamicIntfRef(key, intf=len(key.wmIface)))
                         key.func.append('none')
                         key.params['wif'].append(n[key][1])
                         key.params['mac'].append(n[key][0])
@@ -1373,8 +1373,7 @@ class Association(IntfWireless):
                                          sta.wmIface[0], snr))
 
     @classmethod
-    def configureWirelessLink(cls, sta, ap, enable_wmediumd=False,
-                              enable_interference=False, **params):
+    def configureWirelessLink(cls, sta, ap, **params):
         """Updates RSSI and Others...
         :param sta: station
         :param ap: access point
@@ -1382,19 +1381,19 @@ class Association(IntfWireless):
         dist = sta.get_distance_to(ap)
         wif = params['wif']
         if dist <= ap.params['range'][0]:
-            if not enable_interference:
+            if not wmediumd_mode.mode == w_cst.INTERFERENCE_MODE:
                 if sta.params['rssi'][wif] == 0:
                     cls.updateParams(sta, ap, wif)
             if ('associate' in params and ap != sta.params['associatedTo'][wif]) or \
                     (not sta.params['associatedTo'][wif]
                      and ap not in sta.params['associatedTo']):
                 cls.associate_infra(sta, ap, **params)
-                if not enable_wmediumd:
+                if wmediumd_mode.mode == w_cst.WRONG_MODE:
                     if dist >= 0.01:
                         wirelessLink(sta, ap, dist, **params)
                 if sta not in ap.params['assocStas']:
                     ap.params['assocStas'].append(sta)
-            if not enable_interference:
+            if not wmediumd_mode.mode == w_cst.INTERFERENCE_MODE:
                 cls.setRSSI(sta, ap, wif, dist)
 
     @classmethod
@@ -1417,12 +1416,10 @@ class Association(IntfWireless):
         sta.params['mode'][wif] = ap.params['mode'][0]
 
     @classmethod
-    def associate(cls, sta, ap, enable_wmediumd, enable_interference,
-                  **params):
+    def associate(cls, sta, ap, **params):
         "Associate to Access Point"
         if 'position' in sta.params:
-            cls.configureWirelessLink(sta, ap, enable_wmediumd,
-                                      enable_interference, **params)
+            cls.configureWirelessLink(sta, ap, **params)
         else:
             cls.associate_infra(sta, ap, **params)
         sta.ifaceToAssociate += 1

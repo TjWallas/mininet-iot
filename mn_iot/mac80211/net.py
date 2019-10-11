@@ -632,17 +632,13 @@ class Mininet_wifi(Mininet):
         if associate:
             sta.params['mode'][wif] = ap.params['mode'][ap_wif]
             sta.params['channel'][wif] = ap.params['channel'][ap_wif]
-            enable_wmediumd = False
-            enable_interference = False
-            if self.link == wmediumd:
-                enable_wmediumd = True
-            if self.wmediumd_mode == interference:
-                enable_interference = True
+
             if not self.topo:
                 params['printCon'] = True
+
             params['associate'] = True
-            Association.associate(sta, ap, enable_wmediumd,
-                                  enable_interference, **params)
+            Association.associate(sta, ap, **params)
+
             if 'TCWirelessLink' in str(self.link.__name__):
                 if 'bw' not in params and 'bw' not in str(cls) and \
                         not self.ifb:
@@ -893,8 +889,8 @@ class Mininet_wifi(Mininet):
                 if src != dst:
                     src.setARP(ip=dst.IP(), mac=dst.MAC())
 
-    def telemetry(self, nodes, **kwargs):
-        run_telemetry(nodes, **kwargs)
+    def telemetry(self, **kwargs):
+        run_telemetry(**kwargs)
 
     def start(self):
         "Start controller and switches."
@@ -1812,10 +1808,7 @@ class Mininet_wifi(Mininet):
         if self.autoSetPositions:
             self.wmediumd_mode = interference
         self.wmediumd_mode()
-        if self.wmediumd_mode == interference:
-            mob.wmediumd_mode = 3
-        else:
-            mob.wmediumd_mode = 1
+
         if not self.configureWiFiDirect and not self.configure4addr and \
             self.wmediumd_mode != error_prob:
             wmediumd(self.fading_coefficient, self.noise_threshold,
@@ -1947,17 +1940,18 @@ class Mininet_wifi(Mininet):
                     if 'position' in node.params and 'link' not in node.params:
                         if self.wmediumd_mode != error_prob:
                             pos = node.params['position']
-                            pos[0] = float(pos[0]) + 1
                             if node.func[wif] == 'adhoc':
                                 sleep(1.5)
                             # we need this cause wmediumd is fighting with some associations
                             # e.g. wpa
                             if self.wmediumd_mode == interference:
                                 sleep(0.5)
-                                pos[0] = float(pos[0]) + 1
+                                pos_x = float(pos[0]) + 1
+                                pos = ('%s' % pos_x, '%s' % pos[1], '%s' % pos[2])
                                 node.set_pos_wmediumd(pos)
                                 sleep(1)
-                                pos[0] = float(pos[0]) - 1
+                                pos_x = float(pos[0]) - 1
+                                pos = ('%s' % pos_x, '%s' % pos[1], '%s' % pos[2])
                                 node.set_pos_wmediumd(pos)
 
             mob.aps = self.aps

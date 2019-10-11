@@ -11,6 +11,7 @@ from mininet.log import debug, info
 from mn_iot.mac80211.link import wirelessLink, Association
 from mn_iot.mac80211.associationControl import associationControl
 from mn_iot.mac80211.plot import plot2d, plot3d, plotGraph
+from mn_iot.mac80211.wmediumdConnector import w_cst, wmediumd_mode
 
 
 class mobility(object):
@@ -19,7 +20,6 @@ class mobility(object):
     stations = []
     mobileNodes = []
     ac = None  # association control method
-    wmediumd_mode = None
     pause_simulation = False
     rec_rssi = False
     allAutoAssociation = True
@@ -87,7 +87,8 @@ class mobility(object):
     @classmethod
     def set_pos(cls, node, pos):
         node.params['position'] = pos
-        if mobility.wmediumd_mode == 3 and mobility.thread_._keep_alive:
+        if wmediumd_mode.mode == w_cst.INTERFERENCE_MODE \
+                and mobility.thread_._keep_alive:
             node.set_pos_wmediumd(pos)
 
     @classmethod
@@ -141,7 +142,7 @@ class mobility(object):
                     cls.remove_staconf(sta, wif)
                     cls.kill_wpasupprocess(sta, wif)
                     cls.check_if_wpafile_exist(sta, wif)
-            elif cls.wmediumd_mode and cls.wmediumd_mode != 3:
+            elif wmediumd_mode.mode == w_cst.SNR_MODE:
                 Association.setSNRWmediumd(sta, ap, snr=-10)
             if 'ieee80211r' not in ap.params:
                 Association.disconnect(sta, wif)
@@ -172,12 +173,12 @@ class mobility(object):
                 and ('encrypt' in sta.params and 'wpa' in sta.params['encrypt'][wif]):
                     pass
                 else:
-                    if cls.wmediumd_mode and cls.wmediumd_mode != 3:
-                        if cls.wmediumd_mode:
+                    if wmediumd_mode.mode != w_cst.WRONG_MODE:
+                        if wmediumd_mode.mode == w_cst.SNR_MODE:
                             Association.setSNRWmediumd(
                                 sta, ap, snr=sta.params['rssi'][wif] - (-91))
-                        else:
-                            wirelessLink(sta, ap, dist, wif=wif, ap_wif=0)
+                    else:
+                        wirelessLink(sta, ap, dist, wif=wif, ap_wif=0)
 
     @classmethod
     def check_association(cls, sta, wif, ap_wif):
@@ -238,7 +239,7 @@ class mobility(object):
                     for ap in cls.aps:
                         for ap_wif in range(len(ap.params['wif'])):
                             if ap.func[ap_wif] != 'mesh' and ap.func[ap_wif] != 'adhoc':
-                                if cls.wmediumd_mode == 3:
+                                if wmediumd_mode.mode == w_cst.INTERFERENCE_MODE:
                                     if 'bgscan_threshold' in node.params or ('active_scan' in node.params \
                                     and ('encrypt' in node.params and 'wpa' in node.params['encrypt'][wif])):
                                         if node.params['associatedTo'][wif] == '':
