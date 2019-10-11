@@ -82,30 +82,27 @@ class IntfWireless(object):
     def get_freq(self, freq):
         return format(freq, '.3f').replace('.', '')
 
-    def setFreqParam(self, wif, **params):
-        self.setChanParam(wif, **params)
+    def setChanParam(self, channel, wif):
+        self.node.params['channel'][wif] = str(channel)
         self.node.params['freq'][wif] = self.node.get_freq(wif)
 
-    def setChanParam(self, wif, **params):
-        self.node.params['channel'][wif] = str(params['channel'])
-
-    def setModeParam(self, wif, **params):
-        if params['mode'] == 'a' or params['mode'] == 'ac':
+    def setModeParam(self, mode, wif):
+        if mode == 'a' or mode == 'ac':
             self.pexec('iw reg set US')
-        self.node.params['mode'][wif] = params['mode']
+        self.node.params['mode'][wif] = mode
 
-    def setChannel(self, AP=None, **params):
+    def setChannel(self, channel, wlan, AP=None):
         wif = self.node.params['wif'].index(self.name)
-        self.setFreqParam(wif, **params)
+        self.setChanParam(channel, wif)
         if AP and self.node.func[wif] != 'mesh':
             self.pexec(
                 'hostapd_cli -i %s chan_switch %s %s' % (
-                    self.name, str(params['channel']),
+                    self.name, str(channel),
                     str(self.node.params['freq'][wif]).replace(".", "")))
         else:
             self.iwdev_cmd('%s set channel %s'
                            % (self.node.params['wif'][wif],
-                              str(params['channel'])))
+                              str(channel)))
 
     def ipAddr(self, *args):
         "Configure ourselves using ip link/addr"
@@ -993,19 +990,16 @@ class ITSLink(IntfWireless):
         if intf:
             wif = node.params['wif'].index(intf)
         else:
-            wif = node.ifaceToAssociate
+            wif = 0
+            intf = node.params['wif'][wif]
 
         node.params['channel'][wif] = channel
 
         node.func[wif] = 'its'
         node.params['freq'][wif] = node.get_freq(wif)
-        iface = node.params['wif'][wif]
-        self.name = iface
+        self.name = intf
         self.set_ocb_mode()
         self.configure_ocb(wif)
-
-        if not intf:
-            node.ifaceToAssociate += 1
 
     def set_ocb_mode(self):
         "Set OCB Interface"
@@ -1026,7 +1020,7 @@ class wifiDirectLink(IntfWireless):
         if 'intf' in params:
             wif = node.params['wif'].index(params['intf'])
         else:
-            wif = node.ifaceToAssociate
+            wif = 0
 
         if 'position' not in node.params:
             nums = re.findall(r'\d+', node.name)
@@ -1051,9 +1045,6 @@ class wifiDirectLink(IntfWireless):
             iface = node.params['wif'][wif]
             cmd = self.get_wpa_cmd(filename, iface)
             node.cmd(cmd)
-
-        if 'intf' not in params:
-            node.ifaceToAssociate += 1
 
     @classmethod
     def get_filename(cls, node, wif, iface=None):
@@ -1097,20 +1088,22 @@ class adhoc(IntfWireless):
 
     node = None
 
-    def __init__(self, node, **params):
+    def __init__(self, node, intf=None, ssid='adhocNet',
+                 channel=1, mode='g', passwd=None, ht_cap='',
+                 proto=None, **params):
         """Configure AdHoc
         node: name of the node
         self: custom association class/constructor
         params: parameters for station"""
         self.node = node
-        if 'intf' in params:
-            wif = node.params['wif'].index(params['intf'])
-            if 'mp' in params['intf']:
+        if intf:
+            wif = node.params['wif'].index(intf)
+            if 'mp' in intf:
                 self.iwdev_cmd('%s del' % node.params['wif'][wif])
-                node.params['wif'][wif] = params['intf'].replace('mp', 'wif')
+                node.params['wif'][wif] = intf.replace('mp', 'wif')
         else:
-            wif = node.ifaceToAssociate
-        #intf = node.params['wif'][wif]
+            wif = 0
+            intf = node.params['wif'][wif]
 
         self.name = node.params['wif'][wif]
         if 'ssid' not in node.params:
@@ -1118,48 +1111,28 @@ class adhoc(IntfWireless):
             for _ in range(0, len(node.params['wif'])):
                 node.params['ssid'].append('')
 
-        if not node.params['ssid'][wif]:
-            node.params['ssid'][wif] = 'adhocNetwork'
-            ssid = ("%s" % params.pop('ssid', {}))
-            if ssid != "{}":
-                node.params['ssid'][wif] = ssid
-        else:
-            if 'ssid' in params:
-                ssid = ("%s" % params['ssid'])
-                node.params['ssid'][wif] = ssid
+        node.params['ssid'][wif] = ssid
+        self.setChanParam(channel, wif)
+        self.setModeParam(mode, wif)
+        self.configureAdhoc(node, wif, passwd, ht_cap)
 
-        if 'channel' in params:
-            self.setFreqParam(wif, **params)
+        if proto:
+            manetProtocols(proto, node, wif, **params)
 
-        if 'mode' in params:
-            self.setModeParam(wif, **params)
-
-        self.configureAdhoc(node, wif, **params)
-
-        if 'proto' in params:
-            manetProtocols(params['proto'], node, wif, **params)
-
-        if 'intf' not in params:
-            node.ifaceToAssociate += 1
-
-
-    def configureAdhoc(self, node, wif, **params):
+    def configureAdhoc(self, node, wif, passwd, ht_cap):
         "Configure Wireless Ad Hoc"
         node.func[wif] = 'adhoc'
         self.set_dev_type('ibss')
         self.ipLink('up')
 
-        if 'passwd' in params:
-            self.setSecuredAdhoc(node, wif, **params)
+        if passwd:
+            self.setSecuredAdhoc(node, wif, passwd)
         else:
             ssid = node.params['ssid'][wif]
             freq = self.get_freq(node.params['freq'][wif])
-            ht_cap = ''
-            if 'ht_cap' in params:
-                ht_cap = params['ht_cap']
             self.join_ibss(ssid, freq, ht_cap)
 
-    def setSecuredAdhoc(self, node, wif, **params):
+    def setSecuredAdhoc(self, node, wif, passwd):
         "Set secured adhoc"
         cmd = 'ctrl_interface=/var/run/wpa_supplicant GROUP=wheel\n'
         cmd += 'ap_scan=2\n'
@@ -1171,7 +1144,7 @@ class adhoc(IntfWireless):
         cmd += '         key_mgmt=WPA-PSK\n'
         cmd += '         pairwise=CCMP\n'
         cmd += '         group=CCMP\n'
-        cmd += '         psk="%s"\n' % params['passwd']
+        cmd += '         psk="%s"\n' % passwd
         cmd += '}'
 
         fileName = '%s_%s.staconf' % (node.name, wif)
@@ -1185,7 +1158,8 @@ class mesh(IntfWireless):
 
     node = None
 
-    def __init__(self, node, isAP=False, **params):
+    def __init__(self, node, intf=None, mode='g', channel=1,
+                 ssid='meshNet', passwd=None, ht_cap=''):
         """Configure wireless mesh
         node: name of the node
         self: custom association class/constructor
@@ -1193,58 +1167,31 @@ class mesh(IntfWireless):
         self.name = ''
         self.node = node
 
-        if 'intf' in params:
-            wif = node.params['wif'].index(params['intf'])
+        if intf:
+            wif = node.params['wif'].index(intf)
         else:
-            wif = node.ifaceToAssociate
+            wif = 0
+            intf = node.params['wif'][wif]
 
-        if not isAP and 'ssid' not in node.params:
-            node.params['ssid'] = []
-            for _ in range(len(node.params['wif'])):
-                node.params['ssid'].append('')
+        node.params['ssid'][wif] = ssid
+        self.setMeshIface(node, mode, channel, wif, intf)
+        self.configureMesh(node, wif, ssid, ht_cap, passwd)
 
-        if not node.params['ssid'][wif]:
-            node.params['ssid'][wif] = 'meshNetwork'
-            ssid = ("%s" % params['ssid'])
-            if ssid != "{}":
-                node.params['ssid'][wif] = ssid
-        else:
-            if 'ssid' in params:
-                ssid = ("%s" % params['ssid'])
-                node.params['ssid'][wif] = ssid
+    def set_mesh_type(self, intf):
+        return '%s interface add %s type mp' % (intf, self.name)
 
-        self.name = node.params['wif'][wif]
-        self.setMeshIface(node, **params)
-
-        if 'intf' not in params:
-            node.ifaceToAssociate += 1
-
-    def setMeshIface(self, node, ssid=None, **params):
-        wif = node.params['wif'].index(self.name)
-        intf = node.params['wif'][wif]
+    def setMeshIface(self, node, mode, channel, wif, intf):
         if node.func[wif] == 'adhoc':
             self.set_dev_type('managed')
         self.name = '%s-mp%s' % (node, node.params['wif'][wif][-1:])
-        if node.func[wif] == 'mesh' and 'phyap' in params:
-            self.name = '%s-mp%s' % (node, wif+1)
-
-        self.iwdev_cmd('%s interface add %s type mp' %
-                       (node.params['wif'][wif], self.name))
+        self.iwdev_cmd(self.set_mesh_type(intf))
         self.setMAC(node.params['mac'][wif])
         self.cmd('ip link set %s down' % intf)
         node.params['wif'][wif] = self.name
 
-        if 'channel' in params:
-            self.setChannel(**params)
-
-        if 'mode' in params:
-            self.setModeParam(wif, **params)
-
-        intf = node.params['wif'][wif]
-        if 'freq' in params:
-            freq = params['freq']
-            self.setFreq(freq, intf)
-            self.params['freq'][wif] = freq
+        self.setChanParam(channel, wif)
+        self.setChannel(channel, wif)
+        self.setModeParam(mode, wif)
 
         if 'ip' in node.params:
             self.cmd('ip addr add %s dev %s' % (node.params['ip'][wif],
@@ -1253,29 +1200,23 @@ class mesh(IntfWireless):
             self.name = intf
         self.ipLink('up')
 
-        self.configureMesh(node, wif, **params)
-
-    def configureMesh(self, node, wif, **params):
+    def configureMesh(self, node, wif, ssid, ht_cap, passwd):
         "Configure Wireless Mesh Interface"
         node.func[wif] = 'mesh'
-        if 'passwd' in params:
-            self.setSecuredMesh(node, wif, **params)
+        if passwd:
+            self.setSecuredMesh(node, wif, passwd)
         else:
-            self.associate(node, wif, **params)
+            self.associate(node, wif, ssid, ht_cap)
         if node.params['wif'][wif] not in str(node.intf):
             TCLinkWirelessStation(node, intfName1=node.params['wif'][wif])
 
-    def associate(self, node, wif, **params):
+    def associate(self, node, wif, ssid, ht_cap):
         "Performs Mesh Association"
         name = node.params['wif'][wif]
-        ssid = node.params['ssid'][wif]
         freq = self.get_freq(node.params['freq'][wif])
-        ht_cap = ''
-        if 'ht_cap' in params:
-            ht_cap = params['ht_cap']
         self.join_mesh(ssid, freq, ht_cap, name)
 
-    def setSecuredMesh(self, node, wif, **params):
+    def setSecuredMesh(self, node, wif, passwd):
         "Set secured mesh"
         cmd = 'ctrl_interface=/var/run/wpa_supplicant\n'
         cmd += 'ctrl_interface_group=adm\n'
@@ -1286,7 +1227,7 @@ class mesh(IntfWireless):
         cmd += '         frequency=%s\n' \
                % str(node.params['freq'][wif]).replace('.', '')
         cmd += '         key_mgmt=SAE\n'
-        cmd += '         psk="%s"\n' % params['passwd']
+        cmd += '         psk="%s"\n' % passwd
         cmd += '}'
 
         fileName = '%s_%s.staconf' % (node.name, wif)
@@ -1298,66 +1239,57 @@ class mesh(IntfWireless):
 
 class physicalMesh(IntfWireless):
 
-    def __init__(self, node, isAP=False, **params):
+    def __init__(self, node, intf=None, channel=1, ssid='meshNet'):
         """Configure wireless mesh
         node: name of the node
         self: custom association class/constructor
         params: parameters for node"""
-        wif = node.ifaceToAssociate
+        wif = 0
         self.name = ''
         self.node = node
 
-        if not isAP:
-            node.params['ssid'] = []
-            for _ in range(len(node.params['wif'])):
-                node.params['ssid'].append('')
-
-        node.params['ssid'][wif] = 'meshNetwork'
-        ssid = ("%s" % params['ssid'])
-        if ssid != "{}":
-            node.params['ssid'][wif] = ssid
-
         if int(node.params['range'][wif]) == 0:
             intf = node.params['wif'][wif]
-            node.params['range'][wif] = node.getRange(intf=intf, noiseLevel=95)
+            node.params['range'][wif] = node.getRange(intf=intf,
+                                                      noiseLevel=95)
 
-        params['phyap'] = True
-        self.name = node.params['wif'][wif]
-        self.setPhysicalMeshIface(node, **params)
-        ssid = node.params['ssid'][wif]
+        self.name = intf
+        self.setPhysicalMeshIface(node, wif, intf, channel, ssid)
+        node.params['ssid'][wif] = ssid
         freq = self.get_freq(node.params['freq'][wif])
         iface = node.params['wif'][wif]
         ht_cap = ''
         self.join_mesh(ssid, freq, ht_cap, iface)
 
-        node.ifaceToAssociate += 1
+    def ipLink(self, state=None):
+        "Configure ourselves using ip link"
+        os.system('ip link set %s %s' % (self.name, state))
 
-    def setPhysicalMeshIface(self, node, **params):
-        wif = 0
+    def setPhysicalMeshIface(self, node, wif, intf, channel, ssid):
         iface = 'phy%s-mp%s' % (node, wif)
-        os.system('ip link set %s down' % params['intf'])
+        self.ipLink('down')
         while True:
             id = ''
-            command = 'ip link show | grep %s' % iface
+            cmd = 'ip link show | grep %s' % iface
             try:
-                id = subprocess.check_output(command, shell=True).split("\n")
+                id = subprocess.check_output(cmd, shell=True).split("\n")
             except:
                 pass
             if len(id) == 0:
-                command = ('iw dev %s interface add %s type mp' %
-                           (params['intf'], iface))
-                subprocess.check_output(command, shell=True)
+                cmd = ('iw dev %s interface add %s type mp' %
+                       (intf, iface))
+                self.name = iface
+                subprocess.check_output(cmd, shell=True)
             else:
                 try:
-                    if 'channel' in params:
-                        command = ('iw dev %s set channel %s' %
-                                   (iface, str(params['channel'])))
-                        subprocess.check_output(command, shell=True)
-                    os.system('ip link set %s up' % iface)
+                    if channel:
+                        cmd = ('iw dev %s set channel %s' %
+                               (iface, channel))
+                        subprocess.check_output(cmd, shell=True)
+                    self.ipLink('up')
                     debug("associating %s to %s...\n" %
-                          (iface, node.params['ssid'][wif]))
-                    command = ('iw dev %s mesh join %s' %
-                               (iface, node.params['ssid'][wif]))
+                          (iface, ssid))
+                    command = ('iw dev %s mesh join %s' % (iface, ssid))
                     subprocess.check_output(command, shell=True)
                     break
                 except:
@@ -1424,7 +1356,6 @@ class Association(IntfWireless):
             cls.configureWirelessLink(sta, ap, **params)
         else:
             cls.associate_infra(sta, ap, **params)
-        sta.ifaceToAssociate += 1
 
     @classmethod
     def associate_noEncrypt(cls, sta, ap, wif, ap_wif):

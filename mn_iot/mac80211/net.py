@@ -407,7 +407,6 @@ class Mininet_wifi(Mininet):
         self.addParameters(ap, self.autoSetMacs, node_mode='master', **defaults)
         if 'type' in params and params['type'] is 'mesh':
             ap.func[1] = 'mesh'
-            ap.ifaceToAssociate = 1
 
         self.aps.append(ap)
         return ap
@@ -522,14 +521,8 @@ class Mininet_wifi(Mininet):
 
         cls = self.link if cls is None else cls
 
-        if cls == mesh or cls == physicalMesh:
-            isAP=False
-            if isinstance(node1, AP):
-                isAP=True
-            cls(node=node1, isAP=isAP, **params)
-        elif cls == adhoc:
-            cls(node=node1, **params)
-        elif cls == ITSLink:
+        modes = [mesh, physicalMesh, adhoc, ITSLink]
+        if cls in modes:
             cls(node=node1, **params)
         elif cls == wifiDirectLink or cls == physicalWifiDirectLink:
             link = cls(node=node1, **params)
@@ -619,7 +612,7 @@ class Mininet_wifi(Mininet):
                 if port2:
                     ap_wif = port2
 
-        wif = sta.ifaceToAssociate
+        wif = 0
         if sta_wif:
             wif = sta_wif
         params['wif'] = wif
@@ -1452,7 +1445,6 @@ class Mininet_wifi(Mininet):
             node.params['apsInRange'] = {}
             node.params['associatedTo'] = []
             node.params['rssi'] = []
-            node.ifaceToAssociate = 0
 
         array_ = ['speed', 'max_x', 'max_y', 'min_x', 'min_y',
                   'min_v', 'max_v', 'constantVelocity', 'constantDistance',
@@ -1507,6 +1499,10 @@ class Mininet_wifi(Mininet):
                 else:
                     for _ in range(params['wifs']):
                         node.params[param].append('')
+            if 'ssid' not in params:
+                node.params['ssid'] = []
+                for _ in range(params['wifs']):
+                    node.params['ssid'].append('')
 
         array_ = ['antennaGain', 'antennaHeight', 'txpower',
                   'channel', 'mode', 'freq']
