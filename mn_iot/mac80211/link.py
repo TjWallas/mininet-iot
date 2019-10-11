@@ -828,15 +828,15 @@ class wmediumd(TCWirelessLink):
 
 
 class start_wmediumd(object):
-    def __init__(cls, intfrefs, links, positions,
-                 fading_coefficient, noise_threshold, txpowers, isnodeaps,
+    def __init__(cls, intfrefs, links, positions, fading_coefficient,
+                 noise_threshold, txpowers, isnodeaps,
                  propagation_model, maclist):
 
         w_starter.start(intfrefs, links, pos=positions,
-                              fading_coefficient=fading_coefficient,
-                              noise_threshold=noise_threshold,
-                              txpowers=txpowers, isnodeaps=isnodeaps,
-                              ppm=propagation_model, maclist=maclist)
+                        fading_coefficient=fading_coefficient,
+                        noise_threshold=noise_threshold,
+                        txpowers=txpowers, isnodeaps=isnodeaps,
+                        ppm=propagation_model, maclist=maclist)
 
 
 class set_interference(object):
@@ -860,7 +860,7 @@ class set_interference(object):
 
             for wif in range(0, len(node.params['wif'])):
                 if wif >= 1:
-                    posX+=0.1
+                    posX += 0.1
                 if wif < len(node.params['mac']):
                     wmediumd.positions.append(w_pos(node.wmIface[wif],
                                                     [posX, posY, posZ]))
@@ -1015,19 +1015,13 @@ class ITSLink(IntfWireless):
 
 class wifiDirectLink(IntfWireless):
 
-    def __init__(self, node, intf=None, **params):
+    def __init__(self, node, intf=None):
         "configure wifi-direct"
         if intf:
             wif = node.params['wif'].index(intf)
         else:
             wif = 0
             intf = node.params['wif'][wif]
-
-        if 'position' not in node.params:
-            nums = re.findall(r'\d+', node.name)
-            if nums:
-                id = hex(int(nums[0]))[2:]
-                node.params['position'] = (10, round(id, 2), 0)
 
         node.func[wif] = 'wifiDirect'
 
@@ -1072,36 +1066,16 @@ class wifiDirectLink(IntfWireless):
 
 class physicalWifiDirectLink(wifiDirectLink):
 
-    def __init__(self, node, intf=None, physical=False, **params):
+    def __init__(self, node, intf=None, **params):
         "configure wifi-direct"
-        if intf:
-            wif = node.params['wif'].index(intf)
-        else:
-            wif = 0
-
-        if 'position' not in node.params:
-            nums = re.findall(r'\d+', node.name)
-            if nums:
-                id = hex(int(nums[0]))[2:]
-                node.params['position'] = (10, round(id, 2), 0)
-
+        wif = 0
         node.func[wif] = 'wifiDirect'
 
-        iface = None
-        if physical:
-            iface = 'phy' + node.name
-            wif = 0
-        filename = self.get_filename(node, wif, iface)
+        filename = self.get_filename(node, wif, intf)
         self.config_(node, wif, filename)
 
-        if physical:
-            iface = params['intf']
-            cmd = self.get_wpa_cmd(filename, iface)
-            os.system(cmd)
-        else:
-            iface = node.params['wif'][wif]
-            cmd = self.get_wpa_cmd(filename, iface)
-            node.cmd(cmd)
+        cmd = self.get_wpa_cmd(filename, intf)
+        os.system(cmd)
 
 
 class adhoc(IntfWireless):
