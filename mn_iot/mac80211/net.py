@@ -51,7 +51,7 @@ from mn_iot.mac802154.mobility import Mobility as mobSensor
 
 sys.path.append(str(os.getcwd()) + '/mininet/')
 
-VERSION = "1.0"
+VERSION = "1.1"
 
 
 class Mininet_wifi(Mininet):
