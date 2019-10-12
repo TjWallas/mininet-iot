@@ -1939,11 +1939,11 @@ class Mininet_wifi(Mininet):
                             # we need this cause wmediumd is fighting with some associations
                             # e.g. wpa
                             if self.wmediumd_mode == interference:
-                                sleep(0.5)
+                                sleep(0.1)
                                 pos_x = float(pos[0]) + 1
                                 pos = ('%s' % pos_x, '%s' % pos[1], '%s' % pos[2])
                                 node.set_pos_wmediumd(pos)
-                                sleep(1)
+                                sleep(0.1)
                                 pos_x = float(pos[0]) - 1
                                 pos = ('%s' % pos_x, '%s' % pos[1], '%s' % pos[2])
                                 node.set_pos_wmediumd(pos)
