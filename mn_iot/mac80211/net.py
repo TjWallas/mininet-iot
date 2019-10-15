@@ -35,6 +35,7 @@ from mn_iot.mac80211.wmediumdConnector import w_starter, w_server, \
 from mn_iot.mac80211.link import wirelessLink, wmediumd, Association, \
     _4address, TCWirelessLink, TCLinkWirelessStation, ITSLink, \
     wifiDirectLink, adhoc, mesh, physicalMesh, physicalWifiDirectLink
+from mn_iot.mac80211.clean import Cleanup as cleanup_mnwifi
 from mn_iot.mac80211.devices import GetRate, GetRange
 from mn_iot.mac80211.telemetry import parseData, telemetry as run_telemetry
 from mn_iot.mac80211.mobility import tracked as trackedMob, \
@@ -197,7 +198,7 @@ class Mininet_wifi(Mininet):
 
     def start_socket(self):
         host = self.set_socket_ip
-        port = self.set_socket_port
+        port, cleanup_mnwifi.socket_port = self.set_socket_port, self.set_socket_port
 
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind((host, port))
@@ -424,8 +425,11 @@ class Mininet_wifi(Mininet):
         # find first ap and create link
         if connect:
             if not isinstance(connect, Node):
-                # Use first ap if not specified
-                connect = self.aps[0]
+                if self.aps:
+                    # Use first ap if not specified
+                    connect = self.aps[0]
+                elif self.switches:
+                    connect = self.switches[0]
             # Connect the nat to the ap
             self.addLink(nat, connect)
             # Set the default route on stations
@@ -972,13 +976,7 @@ class Mininet_wifi(Mininet):
             info(node.name + ' ')
             node.terminate()
         info('\n')
-        if self.aps:
-            self.kill_hostapd()
         self.closeMininetWiFi()
-        if self.sensors or self.l2Sensors:
-            mac802154_module.stop()
-        if self.link == wmediumd:
-            self.kill_wmediumd()
         info('\n*** Done\n')
 
     def run(self, test, *args, **kwargs):
@@ -1626,26 +1624,6 @@ class Mininet_wifi(Mininet):
                     TCLinkWirelessStation(node, intfName1=vif)
                     self.configureMacAddr(node)
 
-    @staticmethod
-    def kill_hostapd():
-        "Kill hostapd"
-        module.kill_hostapd()
-        sleep(0.1)
-
-    @staticmethod
-    def kill_wmediumd():
-        "Kill wmediumd"
-        info("\n*** Killing wmediumd")
-        w_server.disconnect()
-        w_starter.stop()
-        sleep(0.1)
-
-    @staticmethod
-    def kill_mac80211_hwsim():
-        "Kill mac80211_hwsim"
-        module.kill_mac80211_hwsim()
-        sleep(0.1)
-
     def configureWirelessLink(self):
         """Configure Wireless Link
 
@@ -1667,6 +1645,7 @@ class Mininet_wifi(Mininet):
             setattr(self, key, kwargs[key])
         if 'max_z' in kwargs and kwargs['max_z'] != 0:
             self.plot = plot3d
+        cleanup_mnwifi.plot = self.plot
 
     def checkDimension(self, nodes):
         try:
@@ -2018,12 +1997,10 @@ class Mininet_wifi(Mininet):
             mobSensor.thread_.keep_alive = False
         sleep(0.5)
 
+    @classmethod
     def closeMininetWiFi(self):
         "Close Mininet-WiFi"
-        self.plot.closePlot()
-        module.stop()  # Stopping WiFi Module
-        if self.set_socket_ip:
-            os.system('fuser -k %s/tcp' % self.set_socket_port)
+        cleanup_mnwifi.kill_mod_proc()
 
 
 class MininetWithControlWNet(Mininet_wifi):

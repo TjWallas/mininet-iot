@@ -1231,15 +1231,15 @@ class AccessPoint(AP):
 
     def APConfigFile(self, cmd, ap, wif):
         "run an Access Point and create the config file"
-        iface = ap.params['wif'][wif]
+        intf = ap.params['wif'][wif]
         if 'phywlan' in ap.params:
-            iface = ap.params['phywlan']
-            ap.cmd('ip link set %s down' % iface)
-            ap.cmd('ip link set %s up' % iface)
-        apconfname = "mn%d_%s.apconf" % (os.getpid(), iface)
+            intf = ap.params['phywlan']
+            ap.cmd('ip link set %s down' % intf)
+            ap.cmd('ip link set %s up' % intf)
+        apconfname = "mn%d_%s.apconf" % (os.getpid(), intf)
         content = cmd + ("\' > %s" % apconfname)
         ap.cmd(content)
-        cmd = self.get_hostapd_cmd(ap, iface)
+        cmd = self.get_hostapd_cmd(ap, intf)
         try:
             ap.cmd(cmd)
             if int(ap.params['channel'][wif]) == 0 \

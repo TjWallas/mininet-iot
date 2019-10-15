@@ -993,13 +993,20 @@ class ITSLink(IntfWireless):
             wif = 0
             intf = node.params['wif'][wif]
 
-        node.params['channel'][wif] = channel
+        if node.func[wif] == 'ap':
+            self.kill_hostapd(node, intf)
 
+        node.params['channel'][wif] = channel
         node.func[wif] = 'its'
         node.params['freq'][wif] = node.get_freq(wif)
         self.name = intf
         self.set_ocb_mode()
         self.configure_ocb(wif)
+
+    def kill_hostapd(self, node, intf):
+        apconfname = "mn%d_%s.apconf" % (os.getpid(), intf)
+        node.cmd('rm %s' % apconfname)
+        node.cmd('pkill -f \'%s\'' % apconfname)
 
     def set_ocb_mode(self):
         "Set OCB Interface"

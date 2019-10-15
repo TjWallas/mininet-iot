@@ -121,58 +121,6 @@ class module(object):
                 info("Warning! If you already had Mininet-WiFi installed "
                      "please run util/install.sh -W and then sudo make install.\n")
 
-    @classmethod
-    def kill_hostapd(cls):
-        'Kill hostapd'
-        info("*** Killing hostapd\n")
-        os.system('pkill -f \'hostapd -B mn%d\'' % os.getpid())
-
-    @classmethod
-    def kill_wmediumd(cls):
-        'Kill wmediumd'
-        info("*** Killing wmediumd\n")
-        os.system('pkill -f wmediumd >/dev/null 2>&1')
-
-    @classmethod
-    def kill_mac80211_hwsim(cls):
-        'Kill mac80211_hwsim'
-        info("*** Killing mac80211_hwsim\n")
-        os.system('rmmod mac80211_hwsim >/dev/null 2>&1')
-
-    @classmethod
-    def stop(cls):
-        'Stop wireless Module'
-        if glob.glob("*.apconf"):
-            os.system('rm *.apconf')
-        if glob.glob("*.staconf"):
-            os.system('rm *.staconf')
-        if glob.glob("*wifiDirect.conf"):
-            os.system('rm *wifiDirect.conf')
-        if glob.glob("*.nodeParams"):
-            os.system('rm *.nodeParams')
-
-        try:
-            (subprocess.check_output("lsmod | grep ifb", shell=True))
-            os.system('rmmod ifb')
-        except:
-            pass
-
-        try:
-            confnames = "mn%d_" % os.getpid()
-            os.system('pkill -f \'wpa_supplicant -B -Dnl80211 -c%s\''
-                      % confnames)
-        except:
-            pass
-
-        try:
-            pidfiles = "mn%d_" % os.getpid()
-            os.system('pkill -f \'wpa_supplicant -B -Dnl80211 -P %s\''
-                      % pidfiles)
-        except:
-            pass
-
-        cls.kill_mac80211_hwsim()
-
     def get_physical_wif(self):
         'Gets the list of physical wifs that already exist'
         if py_version_info < (3, 0):
