@@ -183,7 +183,6 @@ class mobility(object):
 
     @classmethod
     def check_in_range(cls, sta, ap, wif, ap_wif):
-        "check association"
         dist = sta.get_distance_to(ap)
         if dist > ap.params['range'][0]:
             cls.ap_out_of_range(sta, ap, wif, ap_wif)
@@ -237,7 +236,7 @@ class mobility(object):
                 ('active_scan' in node.params and
                  ('encrypt' in node.params and 'wpa' in node.params['encrypt'][wif])):
             if node.params['associatedTo'][wif] == '':
-                Association.associate_infra(node, ap, wlan=wif, ap_wlan=ap_wif)
+                Association.associate_infra(node, ap, wif=wif, ap_wif=ap_wif)
                 if 'bgscan_threshold' in node.params:
                     node.params['associatedTo'][wif] = 'bgscan'
                 else:
