@@ -25,6 +25,7 @@ class mobility(object):
     allAutoAssociation = True
     thread_ = None
     end_time = 0
+    func = ['mesh', 'adhoc', 'its']
 
     @classmethod
     def move_factor(cls, node, diff_time):
@@ -181,23 +182,24 @@ class mobility(object):
                         wirelessLink(sta, ap, dist, wif=wif, ap_wif=0)
 
     @classmethod
-    def check_association(cls, sta, wif, ap_wif):
+    def check_in_range(cls, sta, ap, wif, ap_wif):
         "check association"
-        aps = []
-        for ap in cls.aps:
-            dist = sta.get_distance_to(ap)
-            if dist > ap.params['range'][0]:
-                cls.ap_out_of_range(sta, ap, wif, ap_wif)
-            else:
-                aps.append(ap)
+        dist = sta.get_distance_to(ap)
+        if dist > ap.params['range'][0]:
+            cls.ap_out_of_range(sta, ap, wif, ap_wif)
+            return 0
+        else:
+            return 1
+
+    @classmethod
+    def set_handover(cls, sta, aps, wif, ap_wif):
         for ap in aps:
             dist = sta.get_distance_to(ap)
-            cls.handover(sta, ap, wif, ap_wif)
+            cls.do_handover(sta, ap, wif, ap_wif)
             cls.ap_in_range(sta, ap, wif, dist)
 
     @classmethod
-    def handover(cls, sta, ap, wif, ap_wif):
-        "handover"
+    def do_handover(cls, sta, ap, wif, ap_wif):
         changeAP = False
 
         "Association Control: mechanisms that optimize the use of the APs"
@@ -230,29 +232,39 @@ class mobility(object):
             cls.configureLinks(mobileNodes)
 
     @classmethod
+    def associate_interference_mode(cls, node, ap, wif, ap_wif):
+        if 'bgscan_threshold' in node.params or \
+                ('active_scan' in node.params and
+                 ('encrypt' in node.params and 'wpa' in node.params['encrypt'][wif])):
+            if node.params['associatedTo'][wif] == '':
+                Association.associate_infra(node, ap, wlan=wif, ap_wlan=ap_wif)
+                if 'bgscan_threshold' in node.params:
+                    node.params['associatedTo'][wif] = 'bgscan'
+                else:
+                    node.params['associatedTo'][wif] = 'active_scan'
+            return 0
+        else:
+            ack = cls.check_in_range(node, ap, wif, ap_wif)
+            return ack
+
+    @classmethod
     def configureLinks(cls, nodes):
         for node in nodes:
             for wif in range(len(node.params['wif'])):
-                if node.func[wif] == 'mesh' or node.func[wif] == 'adhoc':
+                if node.func[wif] in cls.func:
                     pass
                 else:
+                    aps = []
                     for ap in cls.aps:
                         for ap_wif in range(len(ap.params['wif'])):
-                            if ap.func[ap_wif] != 'mesh' and ap.func[ap_wif] != 'adhoc':
+                            if ap.func[ap_wif] not in cls.func:
                                 if wmediumd_mode.mode == w_cst.INTERFERENCE_MODE:
-                                    if 'bgscan_threshold' in node.params or ('active_scan' in node.params \
-                                    and ('encrypt' in node.params and 'wpa' in node.params['encrypt'][wif])):
-                                        if node.params['associatedTo'][wif] == '':
-                                            Association.associate_infra(node, ap, wif=wif,
-                                                                        ap_wif=ap_wif)
-                                            if 'bgscan_threshold' in node.params:
-                                                node.params['associatedTo'][wif] = 'bgscan'
-                                            else:
-                                                node.params['associatedTo'][wif] = 'active_scan'
-                                    else:
-                                        cls.check_association(node, wif, ap_wif=ap_wif)
+                                    ack = cls.associate_interference_mode(node, ap, wif, ap_wif)
                                 else:
-                                    cls.check_association(node, wif, ap_wif=ap_wif)
+                                    ack = cls.check_in_range(node, ap, wif, ap_wif)
+                                if ack and ap not in aps:
+                                    aps.append(ap)
+                    cls.set_handover(node, aps, wif, ap_wif=0)
         sleep(0.0001)
 
 
