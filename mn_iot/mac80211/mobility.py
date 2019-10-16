@@ -21,7 +21,6 @@ class mobility(object):
     mobileNodes = []
     ac = None  # association control method
     pause_simulation = False
-    rec_rssi = False
     allAutoAssociation = True
     thread_ = None
     end_time = 0
@@ -111,14 +110,14 @@ class mobility(object):
 
     @classmethod
     def get_pidfile(cls, sta, wif):
-        pidfile = "mn%d_%s_%s_wpa.pid" \
-                  % (os.getpid(), sta.name, wif)
-        return pidfile
+        pid = "mn%d_%s_%s_wpa.pid" % (os.getpid(), sta.name, wif)
+        return pid
 
     @classmethod
     def kill_wpasupprocess(cls, sta, wif):
-        os.system('pkill -f \'wpa_supplicant -B -Dnl80211 -P %s -i '
-                  '%s\'' % (cls.get_pidfile(sta, wif), sta.params['wif'][wif]))
+        intf = sta.params['wif'][wif]
+        pid = cls.get_pidfile(sta, wif)
+        os.system('pkill -f \'wpa_supplicant -B -Dnl80211 -P %s -i %s\'' % (pid, intf))
 
     @classmethod
     def check_if_wpafile_exist(cls, sta, wif):
@@ -152,12 +151,6 @@ class mobility(object):
             sta.params['rssi'][wif] = 0
 
     @classmethod
-    def record_rssi(cls, sta, wif):
-        os.system('hwsim_mgmt -k %s %s >/dev/null 2>&1'
-                  % (sta.phyID[wif],
-                     abs(int(sta.params['rssi'][wif]))))
-
-    @classmethod
     def ap_in_range(cls, sta, ap, wif, dist):
         "When ap is in range"
         rssi = sta.get_rssi(ap, wif, dist)
@@ -165,8 +158,6 @@ class mobility(object):
         ap.params['stasInRange'][sta] = rssi
         if ap == sta.params['associatedTo'][wif]:
             sta.params['rssi'][wif] = rssi
-            if cls.rec_rssi:
-                cls.record_rssi(sta, wif)
             if sta not in ap.params['assocStas']:
                 ap.params['assocStas'].append(sta)
             if dist >= 0.01:

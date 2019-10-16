@@ -59,6 +59,18 @@ class IntfWireless(object):
         "Run a command in our owning node"
         return self.node.pexec(*args, **kwargs)
 
+    @classmethod
+    def get_intf(cls, node, wif):
+        return node.params['wif'][wif]
+
+    @classmethod
+    def get_mac(cls, node, wif):
+        return node.params['mac'][wif]
+
+    @classmethod
+    def get_ssid(cls, node, wif):
+        return node.params['ssid'][wif]
+
     def set_dev_type(self, type):
         self.iwdev_cmd('%s set type %s' % (self.name, type))
 
@@ -1249,14 +1261,13 @@ class physicalMesh(IntfWireless):
         self.name = ''
         self.node = node
 
+        node.params['ssid'][wif] = ssid
         if int(node.params['range'][wif]) == 0:
             intf = node.params['wif'][wif]
-            node.params['range'][wif] = node.getRange(intf=intf,
-                                                      noiseLevel=95)
+            node.params['range'][wif] = node.getRange(intf, 95)
 
         self.name = intf
         self.setPhysicalMeshIface(node, wif, intf, channel, ssid)
-        node.params['ssid'][wif] = ssid
         freq = self.get_freq(node.params['freq'][wif])
         iface = node.params['wif'][wif]
         ht_cap = ''
@@ -1309,10 +1320,6 @@ class Association(IntfWireless):
 
     @classmethod
     def configureWirelessLink(cls, sta, ap, **params):
-        """Updates RSSI and Others...
-        :param sta: station
-        :param ap: access point
-        :param ap_wif: AP wif ID"""
         dist = sta.get_distance_to(ap)
         wif = params['wif']
         if dist <= ap.params['range'][0]:
@@ -1341,11 +1348,6 @@ class Association(IntfWireless):
 
     @classmethod
     def updateParams(cls, sta, ap, wif):
-        """
-        :param sta: station
-        :param ap: access point
-        :param wif: wif ID"""
-
         sta.params['freq'][wif] = ap.get_freq(0)
         sta.params['channel'][wif] = ap.params['channel'][0]
         sta.params['mode'][wif] = ap.params['mode'][0]
@@ -1360,14 +1362,10 @@ class Association(IntfWireless):
 
     @classmethod
     def associate_noEncrypt(cls, sta, ap, wif, ap_wif):
-        """Association when there is no encrypt
-        :param sta: station
-        :param ap: access point
-        :param wif: wif ID"""
         #iwconfig is still necessary, since iw doesn't include essid like iwconfig does.
-        intf = sta.params['wif'][wif]
-        ssid = ap.params['ssid'][ap_wif]
-        mac = ap.params['mac'][ap_wif]
+        intf = cls.get_intf(sta, wif)
+        ssid = cls.get_ssid(ap, ap_wif)
+        mac = cls.get_mac(ap, ap_wif)
         debug(cls.iwconfig_con(intf, ssid, mac))
         sta.pexec(cls.iwconfig_con(intf, ssid, mac))
 
@@ -1386,10 +1384,6 @@ class Association(IntfWireless):
 
     @classmethod
     def associate_infra(cls, sta, ap, **params):
-        """Association when infra
-        :param sta: station
-        :param ap: access point
-        :param wif: wif ID"""
         wif = params['wif']
         ap_wif = params['ap_wif']
         associated = 0
@@ -1427,10 +1421,6 @@ class Association(IntfWireless):
 
     @classmethod
     def wpaFile(cls, sta, ap, wif, ap_wif):
-        """creates wpa config file
-        :param sta: station
-        :param ap: access point
-        :param wif: wif ID"""
         cmd = ''
         if 'config' not in ap.params or 'config' not in sta.params:
             if 'authmode' not in ap.params:
@@ -1494,10 +1484,6 @@ class Association(IntfWireless):
 
     @classmethod
     def wpa(cls, sta, ap, wif, ap_wif):
-        """Association when WPA
-        :param sta: station
-        :param ap: access point
-        :param wif: wif ID"""
         pidfile = "mn%d_%s_%s_wpa.pid" % (os.getpid(), sta.name, wif)
         intf = sta.params['wif'][wif]
         cls.wpaFile(sta, ap, wif, ap_wif)
@@ -1505,30 +1491,28 @@ class Association(IntfWireless):
 
     @classmethod
     def handover_ieee80211r(cls, sta, ap, wif, ap_wif):
-        sta.pexec('wpa_cli -i %s roam %s' % (sta.params['wif'][wif],
-                                             ap.params['mac'][ap_wif]))
+        intf = cls.get_intf(sta, wif)
+        mac = cls.get_mac(ap, ap_wif)
+        sta.pexec('wpa_cli -i %s roam %s' % (intf, mac))
 
     @classmethod
     def wep(cls, sta, ap, wif, ap_wif):
-        """Association when WEP
-        :param sta: station
-        :param ap: access point
-        :param wif: wif ID"""
         if 'passwd' not in sta.params:
             passwd = ap.params['passwd'][ap_wif]
         else:
             passwd = sta.params['passwd'][wif]
-        sta.pexec('iw dev %s connect %s key d:0:%s' \
-                % (sta.params['wif'][wif], ap.params['ssid'][ap_wif], passwd))
+        cls.wep_connect(sta, wif, ap, ap_wif, passwd)
+
+    @classmethod
+    def wep_connect(cls, sta, wif, ap, ap_wif, passwd):
+        intf = cls.get_intf(sta, wif)
+        ssid = cls.get_ssid(ap, ap_wif)
+        sta.pexec('iw dev %s connect %s key d:0:%s' % (intf, ssid, passwd))
 
     @classmethod
     def update(cls, sta, ap, wif):
-        """Updates attributes regarding association
-        :param sta: station
-        :param ap: access point
-        :param wif: wif ID"""
-        if sta.params['associatedTo'][wif] != 'active_scan' \
-            and sta.params['associatedTo'][wif] != 'bgscan':
+        no_upt = ['active_scan', 'bgscan']
+        if sta.params['associatedTo'][wif] not in no_upt:
             if sta.params['associatedTo'][wif] \
                     and sta in sta.params['associatedTo'][wif].params['assocStas']:
                 sta.params['associatedTo'][wif].params['assocStas'].remove(sta)
