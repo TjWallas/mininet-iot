@@ -69,7 +69,7 @@ class Mininet_wifi(Mininet):
                  allAutoAssociation=True, driver='nl80211',
                  autoSetPositions=False, configureWiFiDirect=False,
                  configure4addr=False, noise_threshold=-91, cca_threshold=-90,
-                 rec_rssi=False, disable_tcp_checksum=False, ifb=False,
+                 disable_tcp_checksum=False, ifb=False,
                  bridge=False, plot=False, plot3d=False, docker=False,
                  container='mininet-iot', ssh_user='alpha', sixlp=False,
                  set_socket_ip=None, set_socket_port=12345):
@@ -157,7 +157,6 @@ class Mininet_wifi(Mininet):
         self.fading_coefficient = fading_coefficient
         self.noise_threshold = noise_threshold
         self.mob_param = dict()
-        self.rec_rssi = rec_rssi
         self.disable_tcp_checksum = disable_tcp_checksum
         self.plot = plot2d
         self.seed = 1
@@ -181,9 +180,6 @@ class Mininet_wifi(Mininet):
 
         if autoSetPositions and link == wmediumd:
             self.wmediumd_mode = interference
-
-        if self.rec_rssi:
-            mob.rec_rssi = True
 
         if not allAutoAssociation:
             self.autoAssociation = False
@@ -1936,10 +1932,6 @@ class Mininet_wifi(Mininet):
                 else:
                     if 'position' in node.params and 'link' not in node.params:
                         mob.configLinks(node)
-                        if self.rec_rssi:
-                            os.system('hwsim_mgmt -k %s %s >/dev/null 2>&1'
-                                      % (node.phyID[wif],
-                                         abs(int(node.params['rssi'][wif]))))
 
     @staticmethod
     def propagation_model(**kwargs):
