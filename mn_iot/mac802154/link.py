@@ -18,12 +18,12 @@ class Intfmac802154( object ):
         self.name = name
         self.link = link
         self.mac = mac
-        self.wif_ip, self.prefixLen = None, None
+        self.wlan_ip, self.prefixLen = None, None
 
         # if interface is lo, we know the ip is 127.0.0.1.
         # This saves an ipaddr command per node
         if self.name == 'lo':
-            self.wif_ip = '127.0.0.1'
+            self.wlan_ip = '127.0.0.1'
             self.prefixLen = 8
         # Add to node (and move ourselves if necessary )
         if node:
@@ -191,7 +191,7 @@ class Intfmac802154( object ):
 
     def delete( self ):
         "Delete interface"
-        self.cmd( 'iwpan dev ' + self.node.params['wif'][0] + ' del' )
+        self.cmd( 'iwpan dev ' + self.node.params['wlan'][0] + ' del' )
         # We used to do this, but it slows us down:
         # if self.node.inNamespace:
         # Link may have been dumped into root NS
@@ -223,11 +223,11 @@ class SixLowpan(object):
            intf: default interface class/constructor"""
 
         node.cmd('ip link set lo up')
-        node.cmd('ip link set %s down' % node.params['wif'][0])
-        node.cmd('iwpan dev %s set pan_id "%s"' % (node.params['wif'][0], params['panid']))
+        node.cmd('ip link set %s down' % node.params['wlan'][0])
+        node.cmd('iwpan dev %s set pan_id "%s"' % (node.params['wlan'][0], params['panid']))
         node.cmd('ip link add link %s name %s-lowpan type lowpan'
-                 % (node.params['wif'][0], node.name))
-        node.cmd('ip link set %s up' % node.params['wif'][0])
+                 % (node.params['wlan'][0], node.name))
+        node.cmd('ip link set %s up' % node.params['wlan'][0])
         node.cmd('ip link set %s-lowpan up' % node.name)
 
         if params is None:
@@ -241,7 +241,7 @@ class SixLowpan(object):
             intfName1 = self.wpanName(node, ifacename, node.newWpanPort())
         if not cls:
             cls = Intfmac802154
-        params['wif_ip'] = node.params['wif_ip']
+        params['wlan_ip'] = node.params['wlan_ip']
         params['name'] = intfName1
 
         intf1 = cls(node=node, mac=addr, link=self, **params)

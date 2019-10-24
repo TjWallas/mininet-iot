@@ -4,8 +4,8 @@
 import sys
 
 from mininet.log import setLogLevel, info
-from mn_iot.mac80211.cli import CLI_wifi
-from mn_iot.mac80211.net import Mininet_wifi
+from mn_wifi.cli import CLI_wifi
+from mn_iot.mac802154.net import Mininet_iot
 from mn_iot.mac802154.link import SixLowpan
 #from mn_iot.wifi.link import wmediumd
 #from mn_iot.wifi.wmediumdConnector import interference
@@ -13,7 +13,7 @@ from mn_iot.mac802154.link import SixLowpan
 
 def topology(mob):
     "Create a network."
-    net = Mininet_wifi() #link=wmediumd, wmediumd_mode=interference)
+    net = Mininet_iot() #link=wmediumd, wmediumd_mode=interference)
 
     info("*** Creating nodes\n")
     if mob:

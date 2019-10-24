@@ -137,17 +137,17 @@ function mn_deps {
         $install gcc make socat psmisc xterm openssh-clients iperf \
                  iproute telnet python-setuptools libcgroup-tools \
                  ethtool help2man pyflakes pylint python-pep8 python-pexpect
-	elif [ "$DIST" = "SUSE LINUX"  ]; then
-		$install gcc make socat psmisc xterm openssh iperf \
-			     iproute telnet libcgroup-tools \
-			     ethtool help2man python-pyflakes python-pep8 \
-		         ${PYPKG}-setuptools ${PYPKG}-pexpect ${PYPKG}-tk
-	else
-        $install gcc make socat psmisc xterm ssh iperf telnet \
-                 cgroup-bin ethtool help2man pyflakes pylint pep8 \
-                 ${PYPKG}-setuptools ${PYPKG}-pexpect ${PYPKG}-tk
-        $install iproute2 || $install iproute
-	fi
+    elif [ "$DIST" = "SUSE LINUX"  ]; then
+		     $install gcc make socat psmisc xterm openssh iperf \
+			   iproute telnet libcgroup-tools \
+			   ethtool help2man python-pyflakes python-pep8 \
+		     ${PYPKG}-setuptools ${PYPKG}-pexpect ${PYPKG}-tk
+    else
+         $install gcc make socat psmisc xterm ssh iperf telnet \
+                  cgroup-bin ethtool help2man pyflakes pylint pep8 \
+                  ${PYPKG}-setuptools ${PYPKG}-pexpect ${PYPKG}-tk
+         $install iproute2 || $install iproute
+	  fi
 
     echo "Installing Mininet core"
     pushd $MININET_DIR/mininet-iot
@@ -158,6 +158,17 @@ function mn_deps {
 
     sudo git clone --depth=1 https://github.com/mininet/mininet.git
     pushd $MININET_DIR/mininet-iot/mininet
+    sudo python=${python} make install
+
+    echo "Installing Mininet-WiFi core"
+    pushd $MININET_DIR/mininet-iot
+    if [ -d mininet-wifi ]; then
+      echo "Removing mininet-wifi dir..."
+      rm -r mininet-wifi
+    fi
+
+    sudo git clone --depth=1 https://github.com/intrig-unicamp/mininet-wifi.git
+    pushd $MININET_DIR/mininet-iot/mininet-wifi
     sudo python=${python} make install
     popd
     echo "Installing Mininet-iot core"

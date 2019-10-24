@@ -92,7 +92,7 @@ from mininet.util import quietRun, errRun
 from mininet.log import setLogLevel, debug, info, error
 from mininet.clean import addCleanupCallback
 
-from mn_iot.mac80211.node import OVSAP
+from mn_wifi.node import OVSAP
 from mn_iot.examples.clustercli import CLI
 
 

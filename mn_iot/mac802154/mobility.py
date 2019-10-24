@@ -5,8 +5,8 @@ from time import sleep
 
 from threading import Thread as thread
 from mininet.log import debug, info
-from mn_iot.mac80211.plot import plot2d, plot3d, plotGraph
-from mn_iot.mac80211.mobility import mobility
+from mn_wifi.plot import plot2d, plot3d, plotGraph
+from mn_wifi.mobility import mobility
 
 
 class Mobility(object):
@@ -22,8 +22,6 @@ class Mobility(object):
     equationLatency = '(dist / 10)/2'
     equationBw = ' * (1.01 ** -dist)'
 
-    #def __init__(self, src):
-    #    self.get_edge(src)
 
     @classmethod
     def get_edge(self, src):

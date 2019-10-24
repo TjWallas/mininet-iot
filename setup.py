@@ -8,7 +8,7 @@ from os.path import join
 # Get version number from source tree
 import sys
 sys.path.append( '.' )
-from mn_iot.mac80211.net import VERSION
+from mn_iot.mac802154.net import VERSION
 
 scripts = [ join( 'bin', filename ) for filename in [ 'mn' ] ]
 
@@ -20,7 +20,7 @@ setup(
     description='Process-based OpenFlow emulator',
     author='Bob Lantz; Ramon Fontes',
     author_email='rlantz@cs.stanford.edu; ramonrf@dca.fee.unicamp.br',
-    packages=[ 'mn_iot', 'mn_iot.mac80211', 'mn_iot.mac802154', 'mn_iot.wmediumd.data',
+    packages=[ 'mn_iot', 'mininet-wifi.mn_wifi', 'mn_iot.mac802154', 'mn_iot.wmediumd.data',
                'mn_iot.examples', 'mn_iot.sumo', 'mn_iot.sumo.sumolib',
                'mn_iot.sumo.traci', 'mn_iot.sumo.data', 'mn_iot.sumo.sumolib.net',
                'mn_iot.sumo.sumolib.output', 'mn_iot.sumo.sumolib.shapes', 'util' ],

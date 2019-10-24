@@ -1,6 +1,6 @@
 MININET = mininet/mininet/*.py
 MININET-IOT = mn_iot/mac802154/*.py
-MININET-WIFI = mn_iot/mac80211/*.py
+MININET-WIFI = mininet-wifi/mn_wifi/*.py
 TEST = mn_iot/test/*.py
 EXAMPLES = mn_iot/examples/*.py
 MN = bin/mn
@@ -47,7 +47,7 @@ slowtest: $(MININET-IOT)
 	mn_iot/test/test_walkthrough.py -v
 	mn_iot/examples/test/runner.py -v
 
-mnexec: mnexec.c $(MN) mn_iot/mac80211/net.py
+mnexec: mnexec.c $(MN) mininet-wifi/mn_wifi/net.py
 	cc $(CFLAGS) $(LDFLAGS) -DVERSION=\"`PYTHONPATH=. $(PYMN) --version`\" $< -o $@
 
 install-mnexec: $(MNEXEC)
